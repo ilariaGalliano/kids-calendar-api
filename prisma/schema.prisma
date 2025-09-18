@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AppUser {
+  id          String     @id @default(uuid())
+  email       String     @unique
+  passwordHash String
+  createdAt   DateTime   @default(now())
+  households  Household[] @relation("UserHouseholds")
+}
+
+model Household {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  owner     AppUser  @relation(fields: [ownerId], references: [id], name: "UserHouseholds")
+  profiles  Profile[]
+  tasks     Task[]
+  createdAt DateTime @default(now())
+}
+
+model Profile {
+  id           String    @id @default(uuid())
+  householdId  String
+  household    Household @relation(fields: [householdId], references: [id])
+  displayName  String
+  type         ProfileType
+  role         ProfileRole
+  avatarUrl    String?
+  color        String?
+  pinned       Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  createdById  String?
+}
+
+enum ProfileType {
+  adult
+  child
+}
+
+enum ProfileRole {
+  admin
+  member
+}
+
+model Task {
+  id           String    @id @default(uuid())
+  householdId  String
+  household    Household @relation(fields: [householdId], references: [id])
+  title        String
+  description  String?
+  color        String?
+  icon         String?
+  schedule     Json?     // es. { "rrule": "FREQ=DAILY;BYHOUR=8" }
+  createdById  String
+  createdAt    DateTime  @default(now())
+  isActive     Boolean   @default(true)
+  instances    TaskInstance[]
+}
+
+model TaskInstance {
+  id                 String   @id @default(uuid())
+  taskId             String
+  task               Task     @relation(fields: [taskId], references: [id])
+  assigneeProfileId  String
+  date               DateTime // usare solo la data (00:00) per giorno
+  startTime          String?  // HH:mm
+  endTime            String?
+  done               Boolean  @default(false)
+  doneAt             DateTime?
+  @@unique([taskId, assigneeProfileId, date])
+}
