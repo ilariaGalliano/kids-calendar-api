@@ -163,9 +163,16 @@ export class MockDbService {
       id: cuid(), email: 'demo@demo.it', passwordHash: '$2b$10$hash', createdAt: new Date(),
     };
     this.users.push(user);
-    // household
-    const hh: Household = { id: cuid(), name: 'Famiglia Demo', ownerId: user.id, createdAt: new Date() };
+    
+    // household - usiamo un ID fisso per il test
+    const hh: Household = { 
+      id: '6fcd9bea3-d818-46b4-b04b-915b9b231049', // ID fisso per il test
+      name: 'Famiglia Demo', 
+      ownerId: user.id, 
+      createdAt: new Date() 
+    };
     this.households.push(hh);
+    
     // profiles
     const admin: Profile = {
       id: cuid(), householdId: hh.id, displayName: 'Mamma', type: 'adult', role: 'admin',
@@ -180,39 +187,87 @@ export class MockDbService {
       color: '#FFD47A', pinned: false, createdAt: new Date(), avatarUrl: null, createdById: null
     };
     this.profiles.push(admin, kid1, kid2);
-    // tasks
-    const t1: Task = {
-      id: cuid(), householdId: hh.id, title: 'Lavare i denti', description: null,
-      color: '#7ED8A4', icon: 'tooth', schedule: { rrule: 'FREQ=DAILY;BYHOUR=8;BYMINUTE=0' },
-      createdById: admin.id, createdAt: new Date(), isActive: true
-    };
-    const t2: Task = {
-      id: cuid(), householdId: hh.id, title: 'Compiti', description: null,
-      color: '#FFB5C2', icon: 'book', schedule: { rrule: 'FREQ=DAILY;BYHOUR=17;BYMINUTE=0' },
-      createdById: admin.id, createdAt: new Date(), isActive: true
-    };
-    this.tasks.push(t1, t2);
-    // instances (oggi e domani)
+    
+    // Task templates basati sui suggerimenti del frontend
+    const taskTemplates = [
+      { title: '🍎 Colazione', color: '#FFB84D', icon: 'restaurant', time: '07:30' },
+      { title: '📚 Compiti', color: '#7ED8A4', icon: 'book', time: '16:00' },
+      { title: '🎮 Gioco libero', color: '#FF6B6B', icon: 'game-controller', time: '18:00' },
+      { title: '🛁 Bagno', color: '#4ECDC4', icon: 'water', time: '19:30' },
+      { title: '🦷 Lavare i denti', color: '#45B7D1', icon: 'medical', time: '20:00' },
+      { title: '🛏️ Andare a letto', color: '#96CEB4', icon: 'bed', time: '20:30' }
+    ];
+
+    // Crea le task
+    const tasks: Task[] = [];
+    taskTemplates.forEach(template => {
+      const task: Task = {
+        id: cuid(),
+        householdId: hh.id,
+        title: template.title,
+        description: `Task giornaliera: ${template.title}`,
+        color: template.color,
+        icon: template.icon,
+        schedule: { rrule: `FREQ=DAILY;BYHOUR=${template.time.split(':')[0]};BYMINUTE=${template.time.split(':')[1]}` },
+        createdById: admin.id,
+        createdAt: new Date(),
+        isActive: true
+      };
+      tasks.push(task);
+    });
+    this.tasks.push(...tasks);
+
+    // Genera istanze per una settimana (7 giorni partendo da oggi)
+    const instances: TaskInstance[] = [];
     const today = toDateOnly(new Date());
-    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    
+    for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+      const currentDate = new Date(today);
+      currentDate.setDate(today.getDate() + dayOffset);
+      
+      // Per ogni giorno, crea 3-5 task random dai template
+      const dailyTaskCount = Math.floor(Math.random() * 3) + 3; // 3-5 task
+      const selectedTasks = tasks
+        .sort(() => 0.5 - Math.random()) // shuffle
+        .slice(0, dailyTaskCount);
+        
+      selectedTasks.forEach((task, index) => {
+        // Alterna tra i bambini
+        const assignee = index % 2 === 0 ? kid1 : kid2;
+        
+        // Calcola orari basati sul template + un po' di variazione
+        const baseHour = parseInt(task.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '8');
+        const startHour = Math.max(7, Math.min(21, baseHour + Math.floor(Math.random() * 2) - 1));
+        const endHour = startHour + 1;
+        
+        // Alcune task sono già completate (30% di probabilità)
+        const isDone = Math.random() < 0.3;
+        
+        const instance: TaskInstance = {
+          id: cuid(),
+          taskId: task.id,
+          assigneeProfileId: assignee.id,
+          date: currentDate,
+          startTime: `${startHour.toString().padStart(2, '0')}:${(Math.floor(Math.random() * 6) * 10).toString().padStart(2, '0')}`,
+          endTime: `${endHour.toString().padStart(2, '0')}:${(Math.floor(Math.random() * 6) * 10).toString().padStart(2, '0')}`,
+          done: isDone,
+          doneAt: isDone ? new Date(currentDate.getTime() + startHour * 60 * 60 * 1000) : null
+        };
+        
+        instances.push(instance);
+      });
+    }
+    
+    this.instances.push(...instances);
 
-    const i1: TaskInstance = {
-      id: cuid(), taskId: t1.id, assigneeProfileId: kid1.id,
-      date: today, startTime: '08:00', endTime: '08:10', done: false, doneAt: null
-    };
-    const i2: TaskInstance = {
-      id: cuid(), taskId: t2.id, assigneeProfileId: kid1.id,
-      date: today, startTime: '17:00', endTime: '17:30', done: true, doneAt: new Date()
-    };
-    const i3: TaskInstance = {
-      id: cuid(), taskId: t1.id, assigneeProfileId: kid2.id,
-      date: tomorrow, startTime: '08:00', endTime: '08:10', done: false, doneAt: null
-    };
-    this.instances.push(i1, i2, i3);
+    console.log('🌱 Seed completato!');
+    console.log('📊 Statistiche:');
+    console.log(`   - Household ID: ${hh.id}`);
+    console.log(`   - Profili: ${this.profiles.length}`);
+    console.log(`   - Task: ${this.tasks.length}`);
+    console.log(`   - Istanze: ${this.instances.length}`);
+    console.log(`   - Giorni coperti: 7 (da oggi)`);
 
-    console.log('Seed HH_ID:', hh.id);
-
-
-    return { user, hh, admin, kid1, kid2, t1, t2, i1, i2, i3 };
+    return { user, hh, admin, kid1, kid2, tasks, instances };
   }
 }
