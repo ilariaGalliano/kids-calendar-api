@@ -23,8 +23,6 @@ export class AppModule {
     // seed solo se mock
     if ((prisma as any).seedDemo) {
       (prisma as any).seedDemo();
-      console.log('✅ Mock DB seeded');
     }
-    console.log('Prisma provider in AppModule:', prisma.constructor.name);
   }
 }

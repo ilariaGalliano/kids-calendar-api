@@ -260,14 +260,6 @@ export class MockDbService {
     
     this.instances.push(...instances);
 
-    console.log('🌱 Seed completato!');
-    console.log('📊 Statistiche:');
-    console.log(`   - Household ID: ${hh.id}`);
-    console.log(`   - Profili: ${this.profiles.length}`);
-    console.log(`   - Task: ${this.tasks.length}`);
-    console.log(`   - Istanze: ${this.instances.length}`);
-    console.log(`   - Giorni coperti: 7 (da oggi)`);
-
     return { user, hh, admin, kid1, kid2, tasks, instances };
   }
 }
