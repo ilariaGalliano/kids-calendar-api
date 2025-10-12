@@ -188,14 +188,51 @@ export class MockDbService {
     };
     this.profiles.push(admin, kid1, kid2);
     
-    // Task templates basati sui suggerimenti del frontend
+    // Task templates basati sui suggerimenti del frontend - versione estesa
     const taskTemplates = [
-      { title: '🍎 Colazione', color: '#FFB84D', icon: 'restaurant', time: '07:30' },
-      { title: '📚 Compiti', color: '#7ED8A4', icon: 'book', time: '16:00' },
+      // Mattina
+      { title: '� Sveglia', color: '#FFD47A', icon: 'sunny', time: '07:00' },
+      { title: '�🍎 Colazione', color: '#FFB84D', icon: 'restaurant', time: '07:30' },
+      { title: '🧼 Lavarsi', color: '#4ECDC4', icon: 'water', time: '08:00' },
+      { title: '� Vestirsi', color: '#FF9BAA', icon: 'shirt', time: '08:15' },
+      { title: '🎒 Preparare zaino', color: '#6C8CFF', icon: 'backpack', time: '08:30' },
+      
+      // Scuola/Studio
+      { title: '�📚 Compiti di matematica', color: '#7ED8A4', icon: 'calculator', time: '16:00' },
+      { title: '✏️ Compiti di italiano', color: '#FF6B6B', icon: 'pencil', time: '16:30' },
+      { title: '🌍 Studio geografia', color: '#45B7D1', icon: 'globe', time: '17:00' },
+      { title: '🔬 Esperimenti scientifici', color: '#9B59B6', icon: 'flask', time: '17:30' },
+      { title: '🎨 Disegno libero', color: '#F39C12', icon: 'brush', time: '15:30' },
+      
+      // Attività
       { title: '🎮 Gioco libero', color: '#FF6B6B', icon: 'game-controller', time: '18:00' },
-      { title: '🛁 Bagno', color: '#4ECDC4', icon: 'water', time: '19:30' },
-      { title: '🦷 Lavare i denti', color: '#45B7D1', icon: 'medical', time: '20:00' },
-      { title: '🛏️ Andare a letto', color: '#96CEB4', icon: 'bed', time: '20:30' }
+      { title: '🚴‍♀️ Bicicletta', color: '#2ECC71', icon: 'bicycle', time: '17:00' },
+      { title: '⚽ Giocare a pallone', color: '#E74C3C', icon: 'football', time: '16:30' },
+      { title: '🎵 Suonare strumento', color: '#9B59B6', icon: 'musical-notes', time: '17:15' },
+      { title: '� Leggere libro', color: '#3498DB', icon: 'library', time: '19:00' },
+      { title: '🧩 Puzzle/Giochi', color: '#E67E22', icon: 'extension-puzzle', time: '18:30' },
+      
+      // Casa e responsabilità
+      { title: '🧹 Riordinare camera', color: '#1ABC9C', icon: 'home', time: '18:00' },
+      { title: '🍽️ Apparecchiare tavola', color: '#F1C40F', icon: 'restaurant', time: '19:00' },
+      { title: '🗑️ Buttare spazzatura', color: '#95A5A6', icon: 'trash', time: '18:45' },
+      { title: '🐕 Dare da mangiare al cane', color: '#D35400', icon: 'paw', time: '17:30' },
+      { title: '🌱 Innaffiare piante', color: '#27AE60', icon: 'leaf', time: '18:15' },
+      
+      // Sera
+      { title: '🍝 Cena', color: '#E74C3C', icon: 'restaurant', time: '19:30' },
+      { title: '📺 Tempo TV', color: '#8E44AD', icon: 'tv', time: '20:00' },
+      { title: '�🛁 Bagno', color: '#4ECDC4', icon: 'water', time: '20:30' },
+      { title: '🦷 Lavare i denti', color: '#45B7D1', icon: 'medical', time: '21:00' },
+      { title: '👔 Preparare vestiti domani', color: '#FF9BAA', icon: 'shirt', time: '20:45' },
+      { title: '🛏️ Andare a letto', color: '#96CEB4', icon: 'bed', time: '21:30' },
+      
+      // Weekend speciali
+      { title: '🎭 Teatro/Cinema', color: '#8E44AD', icon: 'film', time: '15:00' },
+      { title: '🏊‍♀️ Piscina', color: '#3498DB', icon: 'water', time: '14:00' },
+      { title: '🍕 Pizza insieme', color: '#E67E22', icon: 'restaurant', time: '19:00' },
+      { title: '👨‍👩‍👧‍👦 Tempo famiglia', color: '#FF9BAA', icon: 'people', time: '16:00' },
+      { title: '🛍️ Spesa insieme', color: '#F39C12', icon: 'basket', time: '10:00' }
     ];
 
     // Crea le task
@@ -225,33 +262,91 @@ export class MockDbService {
       const currentDate = new Date(today);
       currentDate.setDate(today.getDate() + dayOffset);
       
-      // Per ogni giorno, crea 3-5 task random dai template
-      const dailyTaskCount = Math.floor(Math.random() * 3) + 3; // 3-5 task
-      const selectedTasks = tasks
-        .sort(() => 0.5 - Math.random()) // shuffle
-        .slice(0, dailyTaskCount);
+      const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
+      
+      // Più attività nei giorni feriali, diverse nel weekend
+      const dailyTaskCount = isWeekend ? 
+        Math.floor(Math.random() * 4) + 4 : // Weekend: 4-7 task
+        Math.floor(Math.random() * 4) + 5;  // Feriali: 5-8 task
+      
+      // Categorizza i task per fascia oraria
+      const morningTasks = tasks.filter(t => {
+        const hour = parseInt(t.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
+        return hour >= 7 && hour <= 10;
+      });
+      
+      const afternoonTasks = tasks.filter(t => {
+        const hour = parseInt(t.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
+        return hour >= 15 && hour <= 18;
+      });
+      
+      const eveningTasks = tasks.filter(t => {
+        const hour = parseInt(t.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
+        return hour >= 19 && hour <= 22;
+      });
+      
+      // Seleziona task bilanciati per fascia oraria
+      const selectedTasks: Task[] = [];
+      
+      // Almeno 1-2 task mattutini
+      const morningCount = Math.floor(Math.random() * 2) + 1;
+      selectedTasks.push(...morningTasks.sort(() => 0.5 - Math.random()).slice(0, morningCount));
+      
+      // Almeno 2-3 task pomeridiani
+      const afternoonCount = isWeekend ? 
+        Math.floor(Math.random() * 2) + 2 : // Weekend: 2-3
+        Math.floor(Math.random() * 3) + 2;  // Feriali: 2-4
+      selectedTasks.push(...afternoonTasks.sort(() => 0.5 - Math.random()).slice(0, afternoonCount));
+      
+      // Almeno 1-2 task serali
+      const eveningCount = Math.floor(Math.random() * 2) + 1;
+      selectedTasks.push(...eveningTasks.sort(() => 0.5 - Math.random()).slice(0, eveningCount));
+      
+      // Completa con task random se necessario
+      const remainingCount = dailyTaskCount - selectedTasks.length;
+      if (remainingCount > 0) {
+        const remainingTasks = tasks
+          .filter(t => !selectedTasks.includes(t))
+          .sort(() => 0.5 - Math.random())
+          .slice(0, remainingCount);
+        selectedTasks.push(...remainingTasks);
+      }
+      
+      // Ordina per orario
+      selectedTasks.sort((a, b) => {
+        const hourA = parseInt(a.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
+        const hourB = parseInt(b.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
+        return hourA - hourB;
+      });
         
       selectedTasks.forEach((task, index) => {
-        // Alterna tra i bambini
+        // Alterna tra i bambini, ma tieni conto del tipo di task
         const assignee = index % 2 === 0 ? kid1 : kid2;
         
-        // Calcola orari basati sul template + un po' di variazione
-        const baseHour = parseInt(task.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '8');
-        const startHour = Math.max(7, Math.min(21, baseHour + Math.floor(Math.random() * 2) - 1));
-        const endHour = startHour + 1;
+        // Calcola orari basati sul template con leggera variazione
+        const baseHour = parseInt(task.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
+        const variation = Math.floor(Math.random() * 3) - 1; // -1, 0, +1 ora
+        const startHour = Math.max(7, Math.min(21, baseHour + variation));
+        const duration = Math.floor(Math.random() * 90) + 30; // 30-120 minuti
+        const endHour = Math.min(22, startHour + Math.floor(duration / 60));
+        const endMinute = duration % 60;
         
-        // Alcune task sono già completate (30% di probabilità)
-        const isDone = Math.random() < 0.3;
+        // Probabilità di completamento basata sul giorno (giorni passati più completi)
+        const daysPassed = dayOffset; 
+        const completionRate = daysPassed < 2 ? 0.7 : daysPassed < 4 ? 0.4 : 0.1;
+        const isDone = Math.random() < completionRate;
+        
+        const startMinute = Math.floor(Math.random() * 6) * 10; // 0, 10, 20, 30, 40, 50
         
         const instance: TaskInstance = {
           id: cuid(),
           taskId: task.id,
           assigneeProfileId: assignee.id,
           date: currentDate,
-          startTime: `${startHour.toString().padStart(2, '0')}:${(Math.floor(Math.random() * 6) * 10).toString().padStart(2, '0')}`,
-          endTime: `${endHour.toString().padStart(2, '0')}:${(Math.floor(Math.random() * 6) * 10).toString().padStart(2, '0')}`,
+          startTime: `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`,
+          endTime: `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`,
           done: isDone,
-          doneAt: isDone ? new Date(currentDate.getTime() + startHour * 60 * 60 * 1000) : null
+          doneAt: isDone ? new Date(currentDate.getTime() + startHour * 60 * 60 * 1000 + startMinute * 60 * 1000) : null
         };
         
         instances.push(instance);
