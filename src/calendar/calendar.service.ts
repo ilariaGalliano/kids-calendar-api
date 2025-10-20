@@ -252,9 +252,153 @@ export class CalendarService {
     });
   }
 
+  // Nuovo metodo per vista "Ora Corrente"
+  async getCurrentTimeWindow(householdId: string, datetime?: string) {
+    const now = datetime ? new Date(datetime) : new Date();
+    const currentDate = this.formatDate(now);
+    const currentTime = this.formatTime(now);
+    
+    // Calcola finestra temporale: 2 ore prima - 2 ore dopo
+    const startWindow = new Date(now.getTime() - 2 * 60 * 60 * 1000); // -2 ore
+    const endWindow = new Date(now.getTime() + 2 * 60 * 60 * 1000);   // +2 ore
+    
+    const startTime = this.formatTime(startWindow);
+    const endTime = this.formatTime(endWindow);
+    
+    // Ottieni task instances per oggi
+    const taskInstances = await this.prisma.taskInstance.findMany({
+      where: {
+        task: { householdId },
+        date: new Date(currentDate)
+      },
+      include: { 
+        task: true
+      },
+      orderBy: [{ startTime: 'asc' }]
+    });
+
+    // Ottieni profili per l'associazione
+    const profiles = await this.prisma.profile.findMany({
+      where: { householdId },
+      select: {
+        id: true,
+        displayName: true,
+        color: true,
+        avatarUrl: true
+      }
+    });
+
+    // Filtra e arricchisci le task nella finestra temporale
+    const tasksInWindow = taskInstances
+      .filter(instance => {
+        if (!instance.startTime) return false;
+        
+        // Converti startTime in minuti dall'inizio della giornata
+        const [startHour, startMinute] = instance.startTime.split(':').map(Number);
+        const taskMinutes = startHour * 60 + startMinute;
+        
+        // Converti finestra temporale in minuti
+        const [startWinHour, startWinMinute] = startTime.split(':').map(Number);
+        const [endWinHour, endWinMinute] = endTime.split(':').map(Number);
+        
+        let startWindowMinutes = startWinHour * 60 + startWinMinute;
+        let endWindowMinutes = endWinHour * 60 + endWinMinute;
+        
+        // Gestisci il caso in cui la finestra attraversa la mezzanotte
+        if (startWindowMinutes > endWindowMinutes) {
+          // Finestra attraversa mezzanotte (es: 22:00 - 02:00)
+          return taskMinutes >= startWindowMinutes || taskMinutes <= endWindowMinutes;
+        }
+        
+        return taskMinutes >= startWindowMinutes && taskMinutes <= endWindowMinutes;
+      })
+      .map(instance => {
+        const assigneeProfile = profiles.find(p => p.id === instance.assigneeProfileId) || null;
+        
+        // Calcola status temporale e minuti dall'ora corrente
+        const { timeStatus, minutesFromNow } = this.calculateTimeStatus(
+          instance.startTime, 
+          instance.endTime, 
+          currentTime
+        );
+        
+        return {
+          id: instance.id,
+          taskId: instance.taskId,
+          title: instance.task.title,
+          description: instance.task.description,
+          color: instance.task.color,
+          icon: instance.task.icon,
+          startTime: instance.startTime,
+          endTime: instance.endTime,
+          done: instance.done,
+          doneAt: instance.doneAt,
+          assigneeProfileId: instance.assigneeProfileId,
+          assigneeProfile,
+          timeStatus,
+          minutesFromNow
+        };
+      })
+      .sort((a, b) => a.minutesFromNow - b.minutesFromNow); // Ordina per prossimità temporale
+
+    // Calcola statistiche
+    const summary = {
+      total: tasksInWindow.length,
+      completed: tasksInWindow.filter(t => t.done).length,
+      pending: tasksInWindow.filter(t => !t.done).length,
+      current: tasksInWindow.filter(t => t.timeStatus === 'current' && !t.done).length,
+      upcoming: tasksInWindow.filter(t => t.timeStatus === 'upcoming' && !t.done).length
+    };
+
+    return {
+      currentTime,
+      currentDate,
+      timeWindow: {
+        start: startTime,
+        end: endTime
+      },
+      tasks: tasksInWindow,
+      summary
+    };
+  }
+
   // Utility methods
   private formatDate(date: Date): string {
     return date.toISOString().split('T')[0];
+  }
+
+  private formatTime(date: Date): string {
+    return date.toTimeString().slice(0, 5); // HH:MM
+  }
+
+  private calculateTimeStatus(startTime: string | null, endTime: string | null, currentTime: string): { timeStatus: 'past' | 'current' | 'upcoming', minutesFromNow: number } {
+    if (!startTime) {
+      return { timeStatus: 'upcoming', minutesFromNow: 0 };
+    }
+
+    // Converti tutti i tempi in minuti dall'inizio della giornata
+    const [currentHour, currentMinute] = currentTime.split(':').map(Number);
+    const currentMinutes = currentHour * 60 + currentMinute;
+
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const startMinutes = startHour * 60 + startMinute;
+
+    let endMinutes = startMinutes + 60; // Default: 1 ora di durata
+    if (endTime) {
+      const [endHour, endMin] = endTime.split(':').map(Number);
+      endMinutes = endHour * 60 + endMin;
+    }
+
+    const minutesFromNow = startMinutes - currentMinutes;
+
+    // Determina lo status
+    if (currentMinutes < startMinutes) {
+      return { timeStatus: 'upcoming', minutesFromNow };
+    } else if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+      return { timeStatus: 'current', minutesFromNow };
+    } else {
+      return { timeStatus: 'past', minutesFromNow };
+    }
   }
 
   private getMonday(date: Date): Date {

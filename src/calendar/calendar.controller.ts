@@ -1,7 +1,7 @@
 import { Controller, Get, Patch, Body, Param, Query, UseGuards, Logger } from '@nestjs/common';
 import { CalendarService } from './calendar.service';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
-import { CalendarDay, CalendarWeek, CalendarResponse } from './calendar.interfaces';
+import { CalendarDay, CalendarWeek, CalendarResponse, CurrentTimeWindowResponse } from './calendar.interfaces';
 
 @UseGuards(JwtStrategy)
 @Controller('calendar')
@@ -46,6 +46,16 @@ export class CalendarController {
   ): Promise<CalendarDay> {
     this.logger.log(`GET /calendar/day household=${householdId} date=${date}`);
     return this.svc.getDayCalendar(householdId, date);
+  }
+
+  // Endpoint per vista "Ora Corrente" - attività nelle prossime/precedenti 2 ore
+  @Get('now')
+  async getCurrentTimeWindow(
+    @Query('householdId') householdId: string,
+    @Query('datetime') datetime?: string
+  ): Promise<CurrentTimeWindowResponse> {
+    this.logger.log(`GET /calendar/now household=${householdId} datetime=${datetime}`);
+    return this.svc.getCurrentTimeWindow(householdId, datetime);
   }
 
   @Patch(':id/done')
