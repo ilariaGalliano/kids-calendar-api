@@ -30,11 +30,11 @@ function toDateOnly(d: string|Date) {
  */
 export class MockDbService {
   // tabelle in-memory
-  private users: AppUser[] = [];
-  private households: Household[] = [];
-  private profiles: Profile[] = [];
-  private tasks: Task[] = [];
-  private instances: TaskInstance[] = [];
+  public users: AppUser[] = [];
+  public households: Household[] = [];
+  public profiles: Profile[] = [];
+  public tasks: Task[] = [];
+  public instances: TaskInstance[] = [];
 
   // -------------------- appUser --------------------
   appUser = {
@@ -114,6 +114,27 @@ export class MockDbService {
   };
 
   // -------------------- taskInstance --------------------
+
+  addSampleTasksForHousehold(householdId: string) {
+  const children = this.profiles.filter(p => p.householdId === householdId && p.type === 'child');
+  children.forEach(child => {
+    ['Riordina la stanza', 'Fai colazione', 'Leggi un libro'].forEach((title, i) => {
+      this.tasks.push({
+        id: `${householdId}-task-${child.id}-${i}`,
+        householdId,
+        title: `${title} (${child.displayName})`,
+        description: `Attività per ${child.displayName}: ${title}`,
+        color: i === 0 ? '#FFD700' : i === 1 ? '#FF9BAA' : '#81C784',
+        icon: i === 0 ? 'home' : i === 1 ? 'restaurant' : 'library',
+        createdById: child.id,
+        createdAt: new Date(),
+        isActive: true
+      });
+    });
+  });
+}
+
+
   taskInstance = {
     findMany: async ({ where, include, orderBy }: any): Promise<any[]> => {
       let rows = this.instances.filter(inst => {

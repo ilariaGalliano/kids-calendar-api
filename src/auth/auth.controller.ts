@@ -14,7 +14,8 @@ export class AuthController {
   }
 
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.svc.login(dto.email, dto.password);
+  async login(@Body() dto: LoginDto) {
+    const result = await this.svc.login(dto.email, dto.password);
+    return { token: result.accessToken };
   }
 }
