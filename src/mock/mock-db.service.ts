@@ -29,6 +29,74 @@ function toDateOnly(d: string|Date) {
  * Espone "model delegates" con metodi: findUnique, create, count, findMany, update.
  */
 export class MockDbService {
+  /**
+   * Ensures demo tasks and instances exist for any householdId.
+   * If the household or children do not exist, creates them and adds sample tasks/instances for today.
+   */
+  ensureDemoDataForHousehold(householdId: string, date?: string) {
+    // Create household if missing
+    if (!this.households.find(h => h.id === householdId)) {
+      this.households.push({
+        id: householdId,
+        name: 'Famiglia Test',
+        ownerId: 'demo-owner',
+        createdAt: new Date()
+      });
+    }
+    // Create two child profiles if missing
+    if (!this.profiles.find(p => p.householdId === householdId && p.type === 'child')) {
+      this.profiles.push(
+        {
+          id: householdId + '-kid1',
+          householdId,
+          displayName: 'TestKid1',
+          type: 'child',
+          role: 'member',
+          avatarUrl: null,
+          color: '#9AD7FF',
+          pinned: true,
+          createdAt: new Date(),
+          createdById: null
+        },
+        {
+          id: householdId + '-kid2',
+          householdId,
+          displayName: 'TestKid2',
+          type: 'child',
+          role: 'member',
+          avatarUrl: null,
+          color: '#FFD47A',
+          pinned: false,
+          createdAt: new Date(),
+          createdById: null
+        }
+      );
+    }
+    // Always add sample tasks for this household (if not present)
+    if (!this.tasks.find(t => t.householdId === householdId)) {
+      this.addSampleTasksForHousehold(householdId);
+    }
+    // Always add sample instances for today (if not present)
+    const todayStr = date || new Date().toISOString().slice(0, 10);
+    const today = new Date(todayStr);
+    const hasInstances = this.instances.some(inst => inst.date.toISOString().slice(0, 10) === todayStr && this.tasks.find(t => t.id === inst.taskId && t.householdId === householdId));
+    if (!hasInstances) {
+      ['07:30', '16:00', '19:00'].forEach((startTime, i) => {
+        this.instances.push({
+          id: householdId + '-inst-' + i,
+          taskId: this.tasks.find(t => t.householdId === householdId && t.title.includes('('))?.id
+            || this.tasks.find(t => t.householdId === householdId)?.id
+            || 'unknown-task-id',
+          assigneeProfileId: householdId + (i % 2 === 0 ? '-kid1' : '-kid2'),
+          date: today,
+          startTime,
+          endTime: (parseInt(startTime.split(':')[0]) + 1).toString().padStart(2, '0') + ':' + startTime.split(':')[1],
+          done: i === 0,
+          doneAt: i === 0 ? today : null
+        });
+      });
+    }
+  }
   // tabelle in-memory
   public users: AppUser[] = [];
   public households: Household[] = [];

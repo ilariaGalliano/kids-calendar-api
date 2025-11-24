@@ -7,8 +7,9 @@ export class MockCalendarController {
 
   @Get('now')
   getCurrentTimeWindow(@Query('householdId') householdId: string, @Query('datetime') datetime?: string) {
-    // Find all tasks in the time window for the household
+    // Always ensure demo data for any householdId and date
     const now = datetime ? new Date(datetime) : new Date();
+    this.mockDb.ensureDemoDataForHousehold(householdId, now.toISOString().slice(0, 10));
     const start = new Date(now);
     start.setHours(now.getHours() - 2);
     const end = new Date(now);
@@ -42,20 +43,30 @@ export class MockCalendarController {
 
   @Get('day')
   getDayCalendar(@Query('householdId') householdId: string, @Query('date') date: string) {
-    // Example: return mock day calendar data
+    this.mockDb.ensureDemoDataForHousehold(householdId, date);
+    const dayTasks = this.mockDb.instances
+      .filter(inst => {
+        const task = this.mockDb.tasks.find(t => t.id === inst.taskId);
+        return task && task.householdId === householdId && inst.date.toISOString().slice(0, 10) === date;
+      })
+      .map(inst => ({
+        ...inst,
+        ...this.mockDb.tasks.find(t => t.id === inst.taskId)
+      }));
     return {
       date,
-      tasks: [], // Fill with mock tasks if needed
+      tasks: dayTasks,
       summary: {
-        total: 0,
-        completed: 0,
-        pending: 0
+        total: dayTasks.length,
+        completed: dayTasks.filter(t => t.done).length,
+        pending: dayTasks.filter(t => !t.done).length
       }
     };
   }
 
   @Get('week')
   getWeekCalendar(@Query('householdId') householdId: string, @Query('date') date: string) {
+    this.mockDb.ensureDemoDataForHousehold(householdId, date);
     // Calculate start and end of week
     const inputDate = new Date(date);
     const dayOfWeek = inputDate.getDay();

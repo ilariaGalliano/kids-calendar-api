@@ -86,7 +86,7 @@ export class CalendarService {
       days.push({
         date: dateStr,
         dayOfWeek: currentDate.getDay(),
-        isToday: currentDate.getTime() === today.getTime(),
+        isToday: this.formatDate(currentDate) === this.formatDate(today),
         tasks: dayTasks
       });
 
