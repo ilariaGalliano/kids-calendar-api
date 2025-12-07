@@ -4,7 +4,11 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 
 @Injectable()
 export class TasksService {
-  private tasks: any[] = [];
+  private tasks: any[] = [
+    { id: 't1', title: 'Lavare i denti', emoji: '🦷', color: '#4ECDC4', duration: 5, category: 'morning', isActive: true, description: 'Lava bene i denti!' },
+    { id: 't2', title: 'Vestirsi', emoji: '👕', color: '#45B7D1', duration: 10, category: 'morning', isActive: true, description: 'Scegli i vestiti!' },
+    { id: 't3', title: 'Riordinare stanza', emoji: '�️', color: '#FFEAA7', duration: 7, category: 'afternoon', isActive: true, description: 'Sistema i giochi e il letto.' }
+  ];
 
   getTasks(timeOfDay?: string) {
     if (timeOfDay) {

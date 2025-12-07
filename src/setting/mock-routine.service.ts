@@ -1,16 +1,42 @@
 import { Injectable } from '@nestjs/common';
 import { CreateRoutineDto } from './dto/create-routine.dto';
 import { UpdateRoutineDto } from './dto/update-routine.dto';
+import { MockTasksService } from './mock-tasks.service';
 
 @Injectable()
 export class MockRoutineService {
+  private tasksService = new MockTasksService();
   private routines: any[] = [
-    { id: '1', childId: '1', name: 'Mattina', tasks: ['1'], description: 'Routine mattutina' },
-    { id: '2', childId: '2', name: 'Pomeriggio', tasks: ['2'], description: 'Routine pomeridiana' }
+    {
+      id: 'r1',
+      childId: '1',
+      name: 'Routine Mattina',
+      description: 'Routine mattutina',
+      days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+      startTime: '07:00',
+      isActive: true,
+      tasks: ['t1', 't2']
+    },
+    {
+      id: 'r2',
+      childId: '2',
+      name: 'Routine Pomeriggio',
+      description: 'Routine pomeridiana',
+      days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+      startTime: '16:00',
+      isActive: true,
+      tasks: ['t3']
+    }
   ];
 
   getRoutines(childId: string) {
-    return this.routines.filter(r => r.childId === childId);
+    const allTasks = this.tasksService.getTasks();
+    return this.routines
+      .filter(r => r.childId === childId)
+      .map(routine => ({
+        ...routine,
+        tasks: routine.tasks.map((tid: string) => allTasks.find((t: any) => t.id === tid)).filter(Boolean)
+      }));
   }
 
   createRoutine(dto: CreateRoutineDto) {

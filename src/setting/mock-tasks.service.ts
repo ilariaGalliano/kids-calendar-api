@@ -5,8 +5,45 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 @Injectable()
 export class MockTasksService {
   private tasks: any[] = [
-    { id: '1', name: 'Colazione', timeOfDay: 'morning', timer: 15 },
-    { id: '2', name: 'Compiti', timeOfDay: 'afternoon', timer: 60 }
+    {
+      id: 't1',
+      title: 'Lavare i denti',
+      emoji: '🦷',
+      color: '#4ECDC4',
+      duration: 5,
+      category: 'morning',
+      isActive: true,
+      description: 'Lava bene i denti!',
+      householdId: 'h1',
+      icon: null,
+      schedule: null
+    },
+    {
+      id: 't2',
+      title: 'Vestirsi',
+      emoji: '👕',
+      color: '#45B7D1',
+      duration: 10,
+      category: 'morning',
+      isActive: true,
+      description: 'Scegli i vestiti!',
+      householdId: 'h1',
+      icon: null,
+      schedule: null
+    },
+    {
+      id: 't3',
+      title: 'Riordinare stanza',
+      emoji: '🛏️',
+      color: '#FFEAA7',
+      duration: 7,
+      category: 'afternoon',
+      isActive: true,
+      description: 'Sistema i giochi e il letto.',
+      householdId: 'h1',
+      icon: null,
+      schedule: null
+    }
   ];
 
   getTasks(timeOfDay?: string) {

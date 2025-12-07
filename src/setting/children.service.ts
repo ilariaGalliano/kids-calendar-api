@@ -3,8 +3,8 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class ChildrenService {
   private children: any[] = [
-    { id: '1', name: 'Alice', age: 7 },
-    { id: '2', name: 'Luca', age: 9 }
+    { id: '1', name: 'Alice', age: 7, avatar: '', createdAt: new Date() },
+    { id: '2', name: 'Luca', age: 9, avatar: '', createdAt: new Date() }
   ];
 
   getAllChildren() {

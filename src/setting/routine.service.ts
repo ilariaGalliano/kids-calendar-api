@@ -4,7 +4,26 @@ import { UpdateRoutineDto } from './dto/update-routine.dto';
 
 @Injectable()
 export class RoutineService {
-  private routines: any[] = [];
+  private routines: any[] = [
+    {
+      id: 'r1',
+      childId: '1',
+      name: 'Routine Mattina Alice',
+      tasks: ['t1', 't2'],
+      days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+      startTime: '07:00',
+      isActive: true
+    },
+    {
+      id: 'r2',
+      childId: '2',
+      name: 'Routine Mattina Luca',
+      tasks: ['t1'],
+      days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+      startTime: '07:30',
+      isActive: true
+    }
+  ];
 
   getRoutines(childId: string) {
     return this.routines.filter(r => r.childId === childId);
