@@ -16,7 +16,8 @@ export class TasksController {
   // 2. Create a new task
   @Post()
   createTask(@Body() dto: CreateTaskDto) {
-    return this.tasksService.createTask(dto);
+    const task = this.tasksService.createTask(dto);
+    return task;
   }
 
   // 3. Update a task

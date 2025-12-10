@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateRoutineDto } from './dto/create-routine.dto';
 import { UpdateRoutineDto } from './dto/update-routine.dto';
+import { TasksService } from './tasks.service';
 
 @Injectable()
 export class RoutineService {
@@ -26,20 +27,32 @@ export class RoutineService {
   ];
 
   getRoutines(childId: string) {
-    return this.routines.filter(r => r.childId === childId);
+    // Ottieni i dettagli dei task
+    const tasksService = new TasksService();
+    const allTasks = tasksService.getTasks();
+    return this.routines
+      .filter(r => r.childId === childId)
+      .map(routine => ({
+        ...routine,
+        tasks: routine.tasks.map((tid: string) => allTasks.find((t: any) => t.id === tid)).filter(Boolean)
+      }));
   }
 
   createRoutine(dto: CreateRoutineDto) {
-    const routine = { id: Date.now().toString(), ...dto };
-    this.routines.push(routine);
-    return routine;
+  const routine = { id: Date.now().toString(), ...dto };
+  // Ensure days is present
+  if (!routine.days) routine.days = [];
+  this.routines.push(routine);
+  return routine;
   }
 
   updateRoutine(id: string, dto: UpdateRoutineDto) {
-    const routine = this.routines.find(r => r.id === id);
-    if (!routine) return null;
-    Object.assign(routine, dto);
-    return routine;
+  const routine = this.routines.find(r => r.id === id);
+  if (!routine) return null;
+  Object.assign(routine, dto);
+  // Ensure days is present after update
+  if (!routine.days) routine.days = [];
+  return routine;
   }
 
   deleteRoutine(id: string) {

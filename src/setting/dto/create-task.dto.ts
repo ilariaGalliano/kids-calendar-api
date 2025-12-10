@@ -3,4 +3,5 @@ export class CreateTaskDto {
   description?: string;
   timeOfDay: 'morning' | 'afternoon' | 'evening';
   timer?: number; // duration in minutes or seconds
+  reward?: number;
 }
