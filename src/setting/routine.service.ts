@@ -32,10 +32,37 @@ export class RoutineService {
     const allTasks = tasksService.getTasks();
     return this.routines
       .filter(r => r.childId === childId)
-      .map(routine => ({
-        ...routine,
-        tasks: routine.tasks.map((tid: string) => allTasks.find((t: any) => t.id === tid)).filter(Boolean)
-      }));
+      .map(routine => {
+        // Support both legacy and new format
+        if (routine.tasksByDay) {
+          // Expand each day's tasks to full objects
+          const expandedTasksByDay: Record<string, any[]> = {};
+          Object.keys(routine.tasksByDay).forEach(day => {
+            expandedTasksByDay[day] = routine.tasksByDay[day].map((task: any) => {
+              if (typeof task === 'string') {
+                return allTasks.find((t: any) => t.id === task) || task;
+              }
+              if (task && task.id) {
+                // If already a full object, return as is
+                return task;
+              }
+              return task;
+            });
+          });
+          return {
+            ...routine,
+            tasksByDay: expandedTasksByDay
+          };
+        } else if (routine.tasks) {
+          // Legacy format
+          return {
+            ...routine,
+            tasks: routine.tasks.map((tid: string) => allTasks.find((t: any) => t.id === tid)).filter(Boolean)
+          };
+        } else {
+          return routine;
+        }
+      });
   }
 
   createRoutine(dto: CreateRoutineDto) {
