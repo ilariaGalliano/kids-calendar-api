@@ -1,6 +1,6 @@
 import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
-import { JwtStrategy } from 'src/auth/jwt.strategy';
+import { JwtStrategy } from '../auth/jwt.strategy';
 
 @UseGuards(JwtStrategy)
 @Controller('households/:householdId/profiles')

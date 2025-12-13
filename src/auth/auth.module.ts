@@ -1,12 +1,12 @@
 // src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { CalendarModule } from 'src/calendar/calendar.module';
-import { DatabaseModule } from 'src/database/database.module';
-import { HouseholdsModule } from 'src/households/households.module';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { ProfilesModule } from 'src/profiles/profiles.modules';
-import { TasksModule } from 'src/tasks/tasks.module';
+import { CalendarModule } from '../calendar/calendar.module';
+import { DatabaseModule } from '../database/database.module';
+import { HouseholdsModule } from '../households/households.module';
+import { PrismaService } from '../prisma/prisma.service';
+import { ProfilesModule } from '../profiles/profiles.modules';
+import { TasksModule } from '../tasks/tasks.module';
 
 @Module({
   imports: [
