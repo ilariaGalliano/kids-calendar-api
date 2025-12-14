@@ -76,25 +76,34 @@ export class MockDbService {
     if (!this.tasks.find(t => t.householdId === householdId)) {
       this.addSampleTasksForHousehold(householdId);
     }
-    // Always add sample instances for today (if not present)
-    const todayStr = date || new Date().toISOString().slice(0, 10);
-    const today = new Date(todayStr);
-    const hasInstances = this.instances.some(inst => inst.date.toISOString().slice(0, 10) === todayStr && this.tasks.find(t => t.id === inst.taskId && t.householdId === householdId));
-    if (!hasInstances) {
-      ['07:30', '16:00', '19:00'].forEach((startTime, i) => {
-        this.instances.push({
-          id: householdId + '-inst-' + i,
-          taskId: this.tasks.find(t => t.householdId === householdId && t.title.includes('('))?.id
-            || this.tasks.find(t => t.householdId === householdId)?.id
-            || 'unknown-task-id',
-          assigneeProfileId: householdId + (i % 2 === 0 ? '-kid1' : '-kid2'),
-          date: today,
-          startTime,
-          endTime: (parseInt(startTime.split(':')[0]) + 1).toString().padStart(2, '0') + ':' + startTime.split(':')[1],
-          done: i === 0,
-          doneAt: i === 0 ? today : null
+    // Add sample instances for every day of the week containing the given date
+    const refDateStr = date || new Date().toISOString().slice(0, 10);
+    const refDate = new Date(refDateStr);
+    // Calculate Monday and Sunday of the week
+    const dayOfWeek = refDate.getDay();
+    const monday = new Date(refDate);
+    monday.setDate(refDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1));
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const dayStr = d.toISOString().slice(0, 10);
+      const hasInstances = this.instances.some(inst => inst.date.toISOString().slice(0, 10) === dayStr && this.tasks.find(t => t.id === inst.taskId && t.householdId === householdId));
+      if (!hasInstances) {
+        ['07:30', '16:00', '19:00'].forEach((startTime, j) => {
+          this.instances.push({
+            id: householdId + '-inst-' + i + '-' + j,
+            taskId: this.tasks.find(t => t.householdId === householdId && t.title.includes('('))?.id
+              || this.tasks.find(t => t.householdId === householdId)?.id
+              || 'unknown-task-id',
+            assigneeProfileId: householdId + (j % 2 === 0 ? '-kid1' : '-kid2'),
+            date: new Date(d),
+            startTime,
+            endTime: (parseInt(startTime.split(':')[0]) + 1).toString().padStart(2, '0') + ':' + startTime.split(':')[1],
+            done: j === 0,
+            doneAt: j === 0 ? new Date(d) : null
+          });
         });
-      });
+      }
     }
   }
   // tabelle in-memory

@@ -7,7 +7,7 @@ export class MockCalendarController {
 
   @Get('now')
   getCurrentTimeWindow(@Query('householdId') householdId: string, @Query('datetime') datetime?: string) {
-    // Always ensure demo data for any householdId and date
+    // Always ensure demo data for any householdId and date (for the whole week)
     const now = datetime ? new Date(datetime) : new Date();
     this.mockDb.ensureDemoDataForHousehold(householdId, now.toISOString().slice(0, 10));
     const start = new Date(now);
@@ -43,6 +43,7 @@ export class MockCalendarController {
 
   @Get('day')
   getDayCalendar(@Query('householdId') householdId: string, @Query('date') date: string) {
+    // Ensure demo data for the whole week containing the day
     this.mockDb.ensureDemoDataForHousehold(householdId, date);
     const dayTasks = this.mockDb.instances
       .filter(inst => {
