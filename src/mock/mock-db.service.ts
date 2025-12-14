@@ -5,21 +5,21 @@ type AppUser = { id: string; email: string; passwordHash: string; createdAt: Dat
 type Household = { id: string; name: string; ownerId: string; createdAt: Date };
 type Profile = {
   id: string; householdId: string; displayName: string;
-  type: 'adult'|'child'; role: 'admin'|'member'; avatarUrl?: string|null; color?: string|null;
-  pinned: boolean; createdAt: Date; createdById?: string|null;
+  type: 'adult' | 'child'; role: 'admin' | 'member'; avatarUrl?: string | null; color?: string | null;
+  pinned: boolean; createdAt: Date; createdById?: string | null;
 };
 type Task = {
-  id: string; householdId: string; title: string; description?: string|null;
-  color?: string|null; icon?: string|null; schedule?: any; createdById: string;
+  id: string; householdId: string; title: string; description?: string | null;
+  color?: string | null; icon?: string | null; schedule?: any; createdById: string;
   createdAt: Date; isActive: boolean;
 };
 type TaskInstance = {
   id: string; taskId: string; assigneeProfileId: string; date: Date;
-  startTime?: string|null; endTime?: string|null; done: boolean; doneAt?: Date|null;
+  startTime?: string | null; endTime?: string | null; done: boolean; doneAt?: Date | null;
 };
 
 function cuid() { return randomUUID(); }
-function toDateOnly(d: string|Date) {
+function toDateOnly(d: string | Date) {
   const x = new Date(d);
   return new Date(x.getFullYear(), x.getMonth(), x.getDate());
 }
@@ -106,7 +106,7 @@ export class MockDbService {
 
   // -------------------- appUser --------------------
   appUser = {
-    findUnique: async ({ where: { email } }: any): Promise<AppUser|null> => {
+    findUnique: async ({ where: { email } }: any): Promise<AppUser | null> => {
       return this.users.find(u => u.email === email) || null;
     },
     create: async ({ data }: any): Promise<AppUser> => {
@@ -123,7 +123,7 @@ export class MockDbService {
       this.households.push(row);
       return row;
     },
-    findUnique: async ({ where: { id } }: any): Promise<Household|null> => {
+    findUnique: async ({ where: { id } }: any): Promise<Household | null> => {
       return this.households.find(h => h.id === id) || null;
     },
   };
@@ -184,23 +184,23 @@ export class MockDbService {
   // -------------------- taskInstance --------------------
 
   addSampleTasksForHousehold(householdId: string) {
-  const children = this.profiles.filter(p => p.householdId === householdId && p.type === 'child');
-  children.forEach(child => {
-    ['Riordina la stanza', 'Fai colazione', 'Leggi un libro'].forEach((title, i) => {
-      this.tasks.push({
-        id: `${householdId}-task-${child.id}-${i}`,
-        householdId,
-        title: `${title} (${child.displayName})`,
-        description: `Attività per ${child.displayName}: ${title}`,
-        color: i === 0 ? '#FFD700' : i === 1 ? '#FF9BAA' : '#81C784',
-        icon: i === 0 ? 'home' : i === 1 ? 'restaurant' : 'library',
-        createdById: child.id,
-        createdAt: new Date(),
-        isActive: true
+    const children = this.profiles.filter(p => p.householdId === householdId && p.type === 'child');
+    children.forEach(child => {
+      ['Riordina la stanza', 'Fai colazione', 'Leggi un libro'].forEach((title, i) => {
+        this.tasks.push({
+          id: `${householdId}-task-${child.id}-${i}`,
+          householdId,
+          title: `${title} (${child.displayName})`,
+          description: `Attività per ${child.displayName}: ${title}`,
+          color: i === 0 ? '#FFD700' : i === 1 ? '#FF9BAA' : '#81C784',
+          icon: i === 0 ? 'home' : i === 1 ? 'restaurant' : 'library',
+          createdById: child.id,
+          createdAt: new Date(),
+          isActive: true
+        });
       });
     });
-  });
-}
+  }
 
 
   taskInstance = {
@@ -221,7 +221,7 @@ export class MockDbService {
 
       if (orderBy?.length) {
         for (const o of orderBy) {
-          const [key, dir] = Object.entries(o)[0] as [string, 'asc'|'desc'];
+          const [key, dir] = Object.entries(o)[0] as [string, 'asc' | 'desc'];
           rows = rows.sort((a: any, b: any) => {
             const av = a[key], bv = b[key];
             return (av > bv ? 1 : av < bv ? -1 : 0) * (dir === 'asc' ? 1 : -1);
@@ -252,16 +252,16 @@ export class MockDbService {
       id: cuid(), email: 'demo@demo.it', passwordHash: '$2b$10$hash', createdAt: new Date(),
     };
     this.users.push(user);
-    
+
     // household - usiamo un ID fisso per il test
-    const hh: Household = { 
+    const hh: Household = {
       id: '6fcd9bea3-d818-46b4-b04b-915b9b231049', // ID fisso per il test
-      name: 'Famiglia Demo', 
-      ownerId: user.id, 
-      createdAt: new Date() 
+      name: 'Famiglia Demo',
+      ownerId: user.id,
+      createdAt: new Date()
     };
     this.households.push(hh);
-    
+
     // profiles
     const admin: Profile = {
       id: cuid(), householdId: hh.id, displayName: 'Mamma', type: 'adult', role: 'admin',
@@ -276,52 +276,52 @@ export class MockDbService {
       color: '#FFD47A', pinned: false, createdAt: new Date(), avatarUrl: null, createdById: null
     };
     this.profiles.push(admin, kid1, kid2);
-    
+
     // Task templates basati sui suggerimenti del frontend - versione estesa
     const taskTemplates = [
       // Mattina
-      { title: '� Sveglia', color: '#FFD47A', icon: 'sunny', time: '07:00' },
-      { title: '�🍎 Colazione', color: '#FFB84D', icon: 'restaurant', time: '07:30' },
-      { title: '🧼 Lavarsi', color: '#4ECDC4', icon: 'water', time: '08:00' },
-      { title: '� Vestirsi', color: '#FF9BAA', icon: 'shirt', time: '08:15' },
-      { title: '🎒 Preparare zaino', color: '#6C8CFF', icon: 'backpack', time: '08:30' },
-      
-      // Scuola/Studio
-      { title: '�📚 Compiti di matematica', color: '#7ED8A4', icon: 'calculator', time: '16:00' },
-      { title: '✏️ Compiti di italiano', color: '#FF6B6B', icon: 'pencil', time: '16:30' },
-      { title: '🌍 Studio geografia', color: '#45B7D1', icon: 'globe', time: '17:00' },
-      { title: '🔬 Esperimenti scientifici', color: '#9B59B6', icon: 'flask', time: '17:30' },
-      { title: '🎨 Disegno libero', color: '#F39C12', icon: 'brush', time: '15:30' },
-      
+      { title: 'Sveglia', color: '#FFD47A', icon: '🌅', time: '07:00' },
+      { title: 'Colazione', color: '#FFB84D', icon: '🍎', time: '07:30' },
+      { title: 'Lavarsi', color: '#4ECDC4', icon: '🧼', time: '08:00' },
+      { title: 'Vestirsi', color: '#FF9BAA', icon: '👕', time: '08:15' },
+      { title: 'Preparare zaino', color: '#6C8CFF', icon: '🎒', time: '08:30' },
+
+      // Scuola / Studio
+      { title: 'Compiti di matematica', color: '#7ED8A4', icon: '📚', time: '16:00' },
+      { title: 'Compiti di italiano', color: '#FF6B6B', icon: '✏️', time: '16:30' },
+      { title: 'Studio geografia', color: '#45B7D1', icon: '🌍', time: '17:00' },
+      { title: 'Esperimenti scientifici', color: '#9B59B6', icon: '🔬', time: '17:30' },
+      { title: 'Disegno libero', color: '#F39C12', icon: '🎨', time: '15:30' },
+
       // Attività
-      { title: '🎮 Gioco libero', color: '#FF6B6B', icon: 'game-controller', time: '18:00' },
-      { title: '🚴‍♀️ Bicicletta', color: '#2ECC71', icon: 'bicycle', time: '17:00' },
-      { title: '⚽ Giocare a pallone', color: '#E74C3C', icon: 'football', time: '16:30' },
-      { title: '🎵 Suonare strumento', color: '#9B59B6', icon: 'musical-notes', time: '17:15' },
-      { title: '� Leggere libro', color: '#3498DB', icon: 'library', time: '19:00' },
-      { title: '🧩 Puzzle/Giochi', color: '#E67E22', icon: 'extension-puzzle', time: '18:30' },
-      
+      { title: 'Gioco libero', color: '#FF6B6B', icon: '🎮', time: '18:00' },
+      { title: 'Bicicletta', color: '#2ECC71', icon: '🚴‍♀️', time: '17:00' },
+      { title: 'Giocare a pallone', color: '#E74C3C', icon: '⚽', time: '16:30' },
+      { title: 'Suonare strumento', color: '#9B59B6', icon: '🎵', time: '17:15' },
+      { title: 'Leggere libro', color: '#3498DB', icon: '📖', time: '19:00' },
+      { title: 'Puzzle / Giochi', color: '#E67E22', icon: '🧩', time: '18:30' },
+
       // Casa e responsabilità
-      { title: '🧹 Riordinare camera', color: '#1ABC9C', icon: 'home', time: '18:00' },
-      { title: '🍽️ Apparecchiare tavola', color: '#F1C40F', icon: 'restaurant', time: '19:00' },
-      { title: '🗑️ Buttare spazzatura', color: '#95A5A6', icon: 'trash', time: '18:45' },
-      { title: '🐕 Dare da mangiare al cane', color: '#D35400', icon: 'paw', time: '17:30' },
-      { title: '🌱 Innaffiare piante', color: '#27AE60', icon: 'leaf', time: '18:15' },
-      
+      { title: 'Riordinare camera', color: '#1ABC9C', icon: '🧹', time: '18:00' },
+      { title: 'Apparecchiare tavola', color: '#F1C40F', icon: '🍽️', time: '19:00' },
+      { title: 'Buttare spazzatura', color: '#95A5A6', icon: '🗑️', time: '18:45' },
+      { title: 'Dare da mangiare al cane', color: '#D35400', icon: '🐕', time: '17:30' },
+      { title: 'Innaffiare piante', color: '#27AE60', icon: '🌱', time: '18:15' },
+
       // Sera
-      { title: '🍝 Cena', color: '#E74C3C', icon: 'restaurant', time: '19:30' },
-      { title: '📺 Tempo TV', color: '#8E44AD', icon: 'tv', time: '20:00' },
-      { title: '�🛁 Bagno', color: '#4ECDC4', icon: 'water', time: '20:30' },
-      { title: '🦷 Lavare i denti', color: '#45B7D1', icon: 'medical', time: '21:00' },
-      { title: '👔 Preparare vestiti domani', color: '#FF9BAA', icon: 'shirt', time: '20:45' },
-      { title: '🛏️ Andare a letto', color: '#96CEB4', icon: 'bed', time: '21:30' },
-      
-      // Weekend speciali
-      { title: '🎭 Teatro/Cinema', color: '#8E44AD', icon: 'film', time: '15:00' },
-      { title: '🏊‍♀️ Piscina', color: '#3498DB', icon: 'water', time: '14:00' },
-      { title: '🍕 Pizza insieme', color: '#E67E22', icon: 'restaurant', time: '19:00' },
-      { title: '👨‍👩‍👧‍👦 Tempo famiglia', color: '#FF9BAA', icon: 'people', time: '16:00' },
-      { title: '🛍️ Spesa insieme', color: '#F39C12', icon: 'basket', time: '10:00' }
+      { title: 'Cena', color: '#E74C3C', icon: '🍝', time: '19:30' },
+      { title: 'Tempo TV', color: '#8E44AD', icon: '📺', time: '20:00' },
+      { title: 'Bagno', color: '#4ECDC4', icon: '🛁', time: '20:30' },
+      { title: 'Lavare i denti', color: '#45B7D1', icon: '🦷', time: '21:00' },
+      { title: 'Preparare vestiti domani', color: '#FF9BAA', icon: '👔', time: '20:45' },
+      { title: 'Andare a letto', color: '#96CEB4', icon: '🛏️', time: '21:30' },
+
+      // Weekend
+      { title: 'Teatro / Cinema', color: '#8E44AD', icon: '🎭', time: '15:00' },
+      { title: 'Piscina', color: '#3498DB', icon: '🏊‍♀️', time: '14:00' },
+      { title: 'Pizza insieme', color: '#E67E22', icon: '🍕', time: '19:00' },
+      { title: 'Tempo famiglia', color: '#FF9BAA', icon: '👨‍👩‍👧‍👦', time: '16:00' },
+      { title: 'Spesa insieme', color: '#F39C12', icon: '🛍️', time: '10:00' }
     ];
 
     // Crea le task
@@ -346,51 +346,51 @@ export class MockDbService {
     // Genera istanze per una settimana (7 giorni partendo da oggi)
     const instances: TaskInstance[] = [];
     const today = toDateOnly(new Date());
-    
+
     for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
       const currentDate = new Date(today);
       currentDate.setDate(today.getDate() + dayOffset);
-      
+
       const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
-      
+
       // Più attività nei giorni feriali, diverse nel weekend
-      const dailyTaskCount = isWeekend ? 
+      const dailyTaskCount = isWeekend ?
         Math.floor(Math.random() * 4) + 4 : // Weekend: 4-7 task
         Math.floor(Math.random() * 4) + 5;  // Feriali: 5-8 task
-      
+
       // Categorizza i task per fascia oraria
       const morningTasks = tasks.filter(t => {
         const hour = parseInt(t.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
         return hour >= 7 && hour <= 10;
       });
-      
+
       const afternoonTasks = tasks.filter(t => {
         const hour = parseInt(t.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
         return hour >= 15 && hour <= 18;
       });
-      
+
       const eveningTasks = tasks.filter(t => {
         const hour = parseInt(t.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
         return hour >= 19 && hour <= 22;
       });
-      
+
       // Seleziona task bilanciati per fascia oraria
       const selectedTasks: Task[] = [];
-      
+
       // Almeno 1-2 task mattutini
       const morningCount = Math.floor(Math.random() * 2) + 1;
       selectedTasks.push(...morningTasks.sort(() => 0.5 - Math.random()).slice(0, morningCount));
-      
+
       // Almeno 2-3 task pomeridiani
-      const afternoonCount = isWeekend ? 
+      const afternoonCount = isWeekend ?
         Math.floor(Math.random() * 2) + 2 : // Weekend: 2-3
         Math.floor(Math.random() * 3) + 2;  // Feriali: 2-4
       selectedTasks.push(...afternoonTasks.sort(() => 0.5 - Math.random()).slice(0, afternoonCount));
-      
+
       // Almeno 1-2 task serali
       const eveningCount = Math.floor(Math.random() * 2) + 1;
       selectedTasks.push(...eveningTasks.sort(() => 0.5 - Math.random()).slice(0, eveningCount));
-      
+
       // Completa con task random se necessario
       const remainingCount = dailyTaskCount - selectedTasks.length;
       if (remainingCount > 0) {
@@ -400,18 +400,18 @@ export class MockDbService {
           .slice(0, remainingCount);
         selectedTasks.push(...remainingTasks);
       }
-      
+
       // Ordina per orario
       selectedTasks.sort((a, b) => {
         const hourA = parseInt(a.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
         const hourB = parseInt(b.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
         return hourA - hourB;
       });
-        
+
       selectedTasks.forEach((task, index) => {
         // Alterna tra i bambini, ma tieni conto del tipo di task
         const assignee = index % 2 === 0 ? kid1 : kid2;
-        
+
         // Calcola orari basati sul template con leggera variazione
         const baseHour = parseInt(task.schedule?.rrule?.match(/BYHOUR=(\d+)/)?.[1] || '12');
         const variation = Math.floor(Math.random() * 3) - 1; // -1, 0, +1 ora
@@ -419,14 +419,14 @@ export class MockDbService {
         const duration = Math.floor(Math.random() * 90) + 30; // 30-120 minuti
         const endHour = Math.min(22, startHour + Math.floor(duration / 60));
         const endMinute = duration % 60;
-        
+
         // Probabilità di completamento basata sul giorno (giorni passati più completi)
-        const daysPassed = dayOffset; 
+        const daysPassed = dayOffset;
         const completionRate = daysPassed < 2 ? 0.7 : daysPassed < 4 ? 0.4 : 0.1;
         const isDone = Math.random() < completionRate;
-        
+
         const startMinute = Math.floor(Math.random() * 6) * 10; // 0, 10, 20, 30, 40, 50
-        
+
         const instance: TaskInstance = {
           id: cuid(),
           taskId: task.id,
@@ -437,11 +437,11 @@ export class MockDbService {
           done: isDone,
           doneAt: isDone ? new Date(currentDate.getTime() + startHour * 60 * 60 * 1000 + startMinute * 60 * 1000) : null
         };
-        
+
         instances.push(instance);
       });
     }
-    
+
     this.instances.push(...instances);
 
     return { user, hh, admin, kid1, kid2, tasks, instances };
