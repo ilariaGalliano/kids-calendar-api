@@ -123,15 +123,16 @@ export class CalendarService {
     const weekStart = this.getMonday(new Date(targetDate));
     const weekEnd = this.getSunday(new Date(targetDate));
 
+    // Se householdId è demo-family, ignora il filtro householdId
     const taskInstances = await this.prisma.taskInstance.findMany({
       where: {
-        task: { householdId },
-        date: { 
-          gte: weekStart, 
-          lte: weekEnd 
+        ...(householdId !== 'demo-family' ? { task: { householdId } } : {}),
+        date: {
+          gte: weekStart,
+          lte: weekEnd
         }
       },
-      include: { 
+      include: {
         task: true
       },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }]
@@ -198,12 +199,13 @@ export class CalendarService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Se householdId è demo-family, ignora il filtro householdId
     const taskInstances = await this.prisma.taskInstance.findMany({
       where: {
-        task: { householdId },
+        ...(householdId !== 'demo-family' ? { task: { householdId } } : {}),
         date: targetDate
       },
-      include: { 
+      include: {
         task: true
       },
       orderBy: [{ startTime: 'asc' }]
@@ -266,12 +268,13 @@ export class CalendarService {
     const endTime = this.formatTime(endWindow);
     
     // Ottieni task instances per oggi
+    // Se householdId è demo-family, ignora il filtro householdId
     const taskInstances = await this.prisma.taskInstance.findMany({
       where: {
-        task: { householdId },
+        ...(householdId !== 'demo-family' ? { task: { householdId } } : {}),
         date: new Date(currentDate)
       },
-      include: { 
+      include: {
         task: true
       },
       orderBy: [{ startTime: 'asc' }]

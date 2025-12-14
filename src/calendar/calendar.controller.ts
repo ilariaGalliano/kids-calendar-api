@@ -3,7 +3,7 @@ import { CalendarService } from './calendar.service';
 import { JwtStrategy } from '../auth/jwt.strategy';
 import { CalendarDay, CalendarWeek, CalendarResponse, CurrentTimeWindowResponse } from './calendar.interfaces';
 
-@UseGuards(JwtStrategy)
+// @UseGuards(JwtStrategy)
 @Controller('calendar')
 export class CalendarController {
   private readonly logger = new Logger(CalendarController.name);
