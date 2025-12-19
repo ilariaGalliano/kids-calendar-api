@@ -15,6 +15,7 @@ import { RoutineController } from './setting/routine.controller';
 import { RoutineService } from './setting/routine.service';
 import { TasksService } from './setting/tasks.service';
 import { TasksController } from './setting/tasks.controller';
+import { AppUsersModule } from './users/users.module';
 
 // Import setting controllers and services
 
@@ -26,6 +27,7 @@ import { TasksController } from './setting/tasks.controller';
     ProfilesModule,
     TasksModule,
     CalendarModule,
+    AppUsersModule
   ],
   controllers: [
     ChildrenController,

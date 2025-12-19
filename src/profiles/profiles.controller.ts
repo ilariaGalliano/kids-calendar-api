@@ -1,8 +1,9 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
 import { JwtStrategy } from '../auth/jwt.strategy';
+import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';
 
-@UseGuards(JwtStrategy)
+@UseGuards(SupabaseJwtGuard)
 @Controller('households/:householdId/profiles')
 export class ProfilesController {
   constructor(private readonly svc: ProfilesService) { }

@@ -12,12 +12,12 @@ export class AuthService {
 //     if (exists) throw new UnauthorizedException('Email già registrata');
 
 //     const passwordHash = await bcrypt.hash(password, 10);
-//     const user = await this.prisma.appUser.create({
+//     const AppUser = await this.prisma.appUser.create({
 //       data: { email, passwordHash },
 //     });
 
 //     const household = await this.prisma.household.create({
-//       data: { name: householdName, ownerId: user.id },
+//       data: { name: householdName, ownerId: AppUser.id },
 //     });
 
 //     // crea profilo admin adulto
@@ -31,19 +31,19 @@ export class AuthService {
 //       },
 //     });
 
-//     return this.sign(user.id, email);
+//     return this.sign(AppUser.id, email);
 //   }
 
   async login(email: string, password: string) {
-    const user = await this.prisma.appUser.findUnique({ where: { email } });
-    if (!user) throw new UnauthorizedException('Credenziali non valide');
-    const ok = await bcrypt.compare(password, user.passwordHash);
+    const AppUser = await this.prisma.appUser.findUnique({ where: { email } });
+    if (!AppUser) throw new UnauthorizedException('Credenziali non valide');
+    const ok = await bcrypt.compare(password, AppUser.passwordHash);
     if (!ok) throw new UnauthorizedException('Credenziali non valide');
-    return this.sign(user.id, email);
+    return this.sign(AppUser.id, email);
   }
 
-  private sign(userId: string, email: string) {
-    const accessToken = this.jwt.sign({ sub: userId, email });
+  private sign(AppUserId: string, email: string) {
+    const accessToken = this.jwt.sign({ sub: AppUserId, email });
     return { accessToken };
   }
 
@@ -52,12 +52,12 @@ export class AuthService {
   if (exists) throw new UnauthorizedException('Email già registrata');
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = await this.prisma.appUser.create({
+  const AppUser = await this.prisma.appUser.create({
     data: { email, passwordHash },
   });
 
   const household = await this.prisma.household.create({
-    data: { name: householdName, ownerId: user.id },
+    data: { name: householdName, ownerId: AppUser.id },
   });
 
   // profilo admin adulto di default
@@ -72,7 +72,7 @@ export class AuthService {
   });
 
   // RITORNO token + householdId per usarlo subito nelle chiamate
-  const accessToken = this.jwt.sign({ sub: user.id, email });
+  const accessToken = this.jwt.sign({ sub: AppUser.id, email });
   return { accessToken, householdId: household.id };
 }
 
