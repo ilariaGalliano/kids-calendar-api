@@ -1,6 +1,5 @@
 import { Controller, Get, Patch, Body, Param, Query, UseGuards, Logger } from '@nestjs/common';
 import { CalendarService } from './calendar.service';
-import { JwtStrategy } from '../auth/jwt.strategy';
 import { CalendarDay, CalendarWeek, CalendarResponse, CurrentTimeWindowResponse } from './calendar.interfaces';
 import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';
 

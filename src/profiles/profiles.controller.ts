@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
-import { JwtStrategy } from '../auth/jwt.strategy';
 import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';
 
 @UseGuards(SupabaseJwtGuard)

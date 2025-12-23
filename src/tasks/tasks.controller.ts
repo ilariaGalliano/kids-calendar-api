@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { TasksService } from './task.service';
-import { JwtStrategy } from '../auth/jwt.strategy';
 import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';
 
 @UseGuards(SupabaseJwtGuard)
