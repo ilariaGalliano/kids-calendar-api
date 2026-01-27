@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseModule } from './database/database.module';
 
 // Usa SEMPRE questo import come tipo per il costruttore
@@ -15,20 +16,26 @@ import { RoutineController } from './setting/routine.controller';
 import { RoutineService } from './setting/routine.service';
 import { TasksService } from './setting/tasks.service';
 import { TasksController } from './setting/tasks.controller';
-import { AppUsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UserModule } from './user/user.module';
 
 // Import setting controllers and services
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      url: process.env.DATABASE_URL,
+      autoLoadEntities: true,
+      synchronize: true,
+    }),
     DatabaseModule,                 // <--- IMPORTANTE
     HouseholdsModule,
     ProfilesModule,
     TasksModule,
     CalendarModule,
-    AppUsersModule,
+    UserModule,
     PrismaModule
   ],
   controllers: [
