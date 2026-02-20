@@ -19,24 +19,24 @@ export class ActivitiesService {
     return this.activityRepository.find();
   }
 
-//   async findOne(id: string): Promise<Activity> {
-//     const activity = await this.activityRepository.findOneBy({ id });
-//     if (!activity) {
-//       throw new NotFoundException(`Activity with ID ${id} not found`);
-//     }
-//     return activity;
-//   }
+  async findOne(id: number): Promise<Activity> {
+    const activity = await this.activityRepository.findOneBy({ id } as any);
+    if (!activity) {
+      throw new NotFoundException(`Activity with ID ${id} not found`);
+    }
+    return activity;
+  }
 
-//   async update(id: string, data: Partial<Activity>): Promise<Activity> {
-//     const activity = await this.activityRepository.findOneBy({ id });
-//     if (!activity) {
-//       throw new NotFoundException(`Activity with ID ${id} not found`);
-//     }
-//     const updated = Object.assign(activity, data);
-//     return this.activityRepository.save(updated);
-//   }
+  async update(id: number, data: Partial<Activity>): Promise<Activity> {
+    const activity = await this.activityRepository.findOneBy({ id } as any);
+    if (!activity) {
+      throw new NotFoundException(`Activity with ID ${id} not found`);
+    }
+    const updated = Object.assign(activity, data);
+    return this.activityRepository.save(updated);
+  }
 
-  async delete(id: string): Promise<{ message: string }> {
+  async delete(id: number): Promise<{ message: string }> {
     const result = await this.activityRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Activity with ID ${id} not found`);

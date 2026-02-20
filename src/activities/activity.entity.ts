@@ -1,10 +1,10 @@
 import { StringDecoder } from "node:string_decoder";
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
-@Entity()
+@Entity('activities')
 export class Activity {
-    @PrimaryGeneratedColumn('uuid')
-    id: StringDecoder;
+    @PrimaryGeneratedColumn()
+    id: number;
 
     @Column({ type: 'text' })
     name_activity: string;
@@ -15,7 +15,7 @@ export class Activity {
     @Column({ type: 'timestamptz' })
     date_start: Date;
 
-    @Column({ type: 'timestamptz' })
+    @Column({ type: 'timestamptz', nullable: true })
     date_end: Date;
 
     @Column({ default: false })
@@ -39,4 +39,10 @@ export class Activity {
         onUpdate: 'CURRENT_TIMESTAMP',
     })
     updated_at: Date;
+
+    @Column({ type: 'integer'})
+    user_id: number;
+
+    @Column({ type: 'integer'})
+    children_id: number;
 }
