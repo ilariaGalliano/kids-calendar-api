@@ -18,6 +18,7 @@ import { TasksService } from './setting/tasks.service';
 import { TasksController } from './setting/tasks.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
+import { ActivitiesModule } from './activities/activities.module';
 
 // Import setting controllers and services
 
@@ -36,7 +37,8 @@ import { UserModule } from './user/user.module';
     TasksModule,
     CalendarModule,
     UserModule,
-    PrismaModule
+    PrismaModule,
+    ActivitiesModule
   ],
   controllers: [
     ChildrenController,

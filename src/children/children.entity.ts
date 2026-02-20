@@ -1,25 +1,19 @@
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
 @Entity()
-export class User{
+export class Children{
     @PrimaryGeneratedColumn()
     id: number;
 
     @Column()
-    email: string
+    name: string
 
     @Column()
-    firstname: string
-
-    @Column()
-    lastname: string
-
-    @Column({ nullable: true })
-    password_hash: string
+    years: string
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     created_at: Date
 
-    @Column({ name: 'avatar', nullable: true })
-    avatarUrl: string;
+    @Column({ name: 'icon', nullable: true })
+    icon: string;
 }
