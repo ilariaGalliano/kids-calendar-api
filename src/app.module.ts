@@ -20,6 +20,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
 import { ChildrenModule } from './children/children.module';
 import { ActivitiesModule } from './activities/activities.module';
+import { RoutineModule } from './routine/routine.module';
 
 // Import setting controllers and services
 
@@ -40,6 +41,7 @@ import { ActivitiesModule } from './activities/activities.module';
     UserModule,
     ChildrenModule,
     ActivitiesModule,
+    RoutineModule,
     PrismaModule
   ],
   controllers: [
