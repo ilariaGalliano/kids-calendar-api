@@ -1,9 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Children } from "src/children/children.entity";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, PrimaryColumn } from "typeorm";
 
 @Entity()
 export class User {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryColumn('uuid')
+    id: string; // SAME AS auth.users.id
 
     @Column()
     email: string
@@ -22,4 +23,7 @@ export class User {
 
     @Column({ nullable: true })
     lastname: string
+
+    @OneToMany(() => Children, (child) => child.user)
+    children: Children[];
 }
