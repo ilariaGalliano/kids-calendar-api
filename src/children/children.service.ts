@@ -20,7 +20,7 @@ export class ChildrenService {
     }
 
     async findOne(id: number): Promise<Children> {
-        const children = await this.childrenRepository.findOneBy({ id });
+        const children = await this.childrenRepository.findOneBy({ id: id.toString() });
         if(!children) {
             throw new NotFoundException(`Children with ID ${id}not found`);
         }
@@ -28,7 +28,7 @@ export class ChildrenService {
     }
 
     async update(id: number, updatedData: Partial<Children>): Promise<Children> {
-        const children = await this.childrenRepository.findOneBy({ id });
+        const children = await this.childrenRepository.findOneBy({ id: id.toString() });
         if(!children) {
             throw new NotFoundException(`Children with ID {id} not found`);
         }
