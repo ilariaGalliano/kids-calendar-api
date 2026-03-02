@@ -19,16 +19,16 @@ export class ChildrenService {
         return this.childrenRepository.find();
     }
 
-    async findOne(id: number): Promise<Children> {
-        const children = await this.childrenRepository.findOneBy({ id: id.toString() });
+    async findOne(id: string): Promise<Children> {
+        const children = await this.childrenRepository.findOneBy({ id });
         if(!children) {
             throw new NotFoundException(`Children with ID ${id}not found`);
         }
         return children;
     }
 
-    async update(id: number, updatedData: Partial<Children>): Promise<Children> {
-        const children = await this.childrenRepository.findOneBy({ id: id.toString() });
+    async update(id: string, updatedData: Partial<Children>): Promise<Children> {
+        const children = await this.childrenRepository.findOneBy({ id });
         if(!children) {
             throw new NotFoundException(`Children with ID {id} not found`);
         }
@@ -36,13 +36,17 @@ export class ChildrenService {
         return this.childrenRepository.save(updated);
     }
 
-    async delete(id: number): Promise<{ message: string }> {
+    async delete(id: string): Promise<{ message: string }> {
         const result = await this.childrenRepository.delete(id);
 
         if(result.affected === 0) {
             throw new NotFoundException(`Children with ID ${id} not found`);
         }
         return { message: `Children with ID ${id} has been deleted successfully!`}
+    }
+
+    async findByUserId(userId: string): Promise<Children[]> {
+        return this.childrenRepository.find({ where: { user_id: userId } });
     }
 
     async search(filters: { name?: string; department?:string}): Promise<Children[]> {

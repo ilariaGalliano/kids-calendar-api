@@ -1,5 +1,6 @@
-import { StringDecoder } from "node:string_decoder";
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Children } from "src/children/children.entity";
+import { User } from "src/user/user.entity";
+import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne } from "typeorm";
 
 @Entity('activities')
 export class Activity {
@@ -40,9 +41,17 @@ export class Activity {
     })
     updated_at: Date;
 
-    @Column({ type: 'integer'})
+    @Column({ type: 'integer' })
     user_id: number;
 
-    @Column({ type: 'integer'})
-    children_id: number;
+    @Column({ type: 'uuid' })
+    children_id: string;
+
+    @ManyToOne(() => User, (user) => user.children, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'user_id' })
+    user: User;
+
+    @ManyToOne(() => Children, (children) => children.activities, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'children_id' })
+    children: Children;
 }
