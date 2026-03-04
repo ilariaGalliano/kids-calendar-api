@@ -505,10 +505,4 @@ export class MockDbService {
 if (require.main === module) {
   const db = new MockDbService();
   db.seedDemo();
-  console.log('Households:', db.households.length);
-  console.log('Profiles:', db.profiles.length);
-  console.log('Tasks:', db.tasks.length);
-  console.log('Instances:', db.instances.length);
-  // Esempio di una istanza
-  console.log('Esempio instance:', db.instances[0]);
 }

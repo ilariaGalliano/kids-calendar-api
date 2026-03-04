@@ -16,6 +16,9 @@ export class Children {
     @Column()
     years: string;
 
+    @Column({ nullable: true })
+    sex: string;
+
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     created_at: Date;
 
