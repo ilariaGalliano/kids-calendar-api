@@ -49,13 +49,13 @@ export class CalendarController {
   }
 
   // Endpoint per vista "Ora Corrente" - attività nelle prossime/precedenti 2 ore
-  @Get('now')
+  @Get('child/:childId/now')
   async getCurrentTimeWindow(
-    @Query('householdId') householdId: string,
+    @Param('childId') childId: string,
     @Query('datetime') datetime?: string
   ): Promise<CurrentTimeWindowResponse> {
-    this.logger.log(`GET /calendar/now household=${householdId} datetime=${datetime}`);
-    return this.svc.getCurrentTimeWindow(householdId, datetime);
+    this.logger.log(`GET /calendar/child/${childId}/now datetime=${datetime}`);
+    return this.svc.getCurrentTimeWindow(childId, datetime);
   }
 
   @Patch(':id/done')

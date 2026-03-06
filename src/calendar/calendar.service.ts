@@ -24,7 +24,7 @@ export class CalendarService {
   async getCalendar(householdId: string, year: number, month: number): Promise<CalendarResponse> {
     const startOfMonth = new Date(year, month - 1, 1);
     const endOfMonth = new Date(year, month, 0);
-    
+
     // Estendi per includere la settimana completa
     const startOfCalendar = this.getMonday(new Date(startOfMonth));
     const endOfCalendar = this.getSunday(new Date(endOfMonth));
@@ -33,12 +33,12 @@ export class CalendarService {
     const taskInstances = await this.prisma.taskInstance.findMany({
       where: {
         task: { householdId },
-        date: { 
-          gte: startOfCalendar, 
-          lte: endOfCalendar 
+        date: {
+          gte: startOfCalendar,
+          lte: endOfCalendar
         }
       },
-      include: { 
+      include: {
         task: true
       },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }]
@@ -254,113 +254,92 @@ export class CalendarService {
     });
   }
 
-  // Nuovo metodo per vista "Ora Corrente"
-  async getCurrentTimeWindow(householdId: string, datetime?: string) {
+  // Nuovo metodo per vista "Ora Corrente" per un bambino specifico
+  async getCurrentTimeWindow(childId: string, datetime?: string) {
     const now = datetime ? new Date(datetime) : new Date();
     const currentDate = this.formatDate(now);
-    const currentTime = this.formatTime(now);
-    
+
     // Calcola finestra temporale: 2 ore prima - 2 ore dopo
     const startWindow = new Date(now.getTime() - 2 * 60 * 60 * 1000); // -2 ore
     const endWindow = new Date(now.getTime() + 2 * 60 * 60 * 1000);   // +2 ore
-    
-    const startTime = this.formatTime(startWindow);
-    const endTime = this.formatTime(endWindow);
-    
-    // Ottieni task instances per oggi
-    // Se householdId è demo-family, ignora il filtro householdId
-    const taskInstances = await this.prisma.taskInstance.findMany({
+
+    // Ottieni attività per il bambino specificato
+    const activities = await this.prisma.taskInstance.findMany({
       where: {
-        ...(householdId !== 'demo-family' ? { task: { householdId } } : {}),
-        date: new Date(currentDate)
-      },
-      include: {
-        task: true
-      },
-      orderBy: [{ startTime: 'asc' }]
-    });
-
-    // Ottieni profili per l'associazione
-    const profiles = await this.prisma.profile.findMany({
-      where: { householdId },
-      select: {
-        id: true,
-        displayName: true,
-        color: true,
-        avatarUrl: true
-      }
-    });
-
-    // Filtra e arricchisci le task nella finestra temporale
-    const tasksInWindow = taskInstances
-      .filter(instance => {
-        if (!instance.startTime) return false;
-        
-        // Converti startTime in minuti dall'inizio della giornata
-        const [startHour, startMinute] = instance.startTime.split(':').map(Number);
-        const taskMinutes = startHour * 60 + startMinute;
-        
-        // Converti finestra temporale in minuti
-        const [startWinHour, startWinMinute] = startTime.split(':').map(Number);
-        const [endWinHour, endWinMinute] = endTime.split(':').map(Number);
-        
-        let startWindowMinutes = startWinHour * 60 + startWinMinute;
-        let endWindowMinutes = endWinHour * 60 + endWinMinute;
-        
-        // Gestisci il caso in cui la finestra attraversa la mezzanotte
-        if (startWindowMinutes > endWindowMinutes) {
-          // Finestra attraversa mezzanotte (es: 22:00 - 02:00)
-          return taskMinutes >= startWindowMinutes || taskMinutes <= endWindowMinutes;
+        assigneeProfileId: childId,
+        date: {
+          gte: new Date(currentDate),
+          lt: new Date(new Date(currentDate).getTime() + 24 * 60 * 60 * 1000)
         }
-        
-        return taskMinutes >= startWindowMinutes && taskMinutes <= endWindowMinutes;
-      })
-      .map(instance => {
-        const assigneeProfile = profiles.find(p => p.id === instance.assigneeProfileId) || null;
-        
-        // Calcola status temporale e minuti dall'ora corrente
-        const { timeStatus, minutesFromNow } = this.calculateTimeStatus(
-          instance.startTime, 
-          instance.endTime, 
-          currentTime
-        );
-        
-        return {
-          id: instance.id,
-          taskId: instance.taskId,
-          title: instance.task.title,
-          description: instance.task.description,
-          color: instance.task.color,
-          icon: instance.task.icon,
-          startTime: instance.startTime,
-          endTime: instance.endTime,
-          done: instance.done,
-          doneAt: instance.doneAt,
-          assigneeProfileId: instance.assigneeProfileId,
-          assigneeProfile,
-          timeStatus,
-          minutesFromNow
-        };
-      })
-      .sort((a, b) => a.minutesFromNow - b.minutesFromNow); // Ordina per prossimità temporale
+      },
+      include: { task: true },
+      orderBy: { date: 'asc' }
+    });
+
+    // Filtra attività nella finestra temporale (±2 ore dal now)
+    const activitiesInWindow = activities.filter((activity: typeof activities[0]) => {
+      const activityTime = new Date(activity.date).getTime();
+      return activityTime >= startWindow.getTime() && activityTime <= endWindow.getTime();
+    });
 
     // Calcola statistiche
+    const total = activitiesInWindow.length;
+    const completed = activitiesInWindow.filter(a => a.done).length;
+    const pending = activitiesInWindow.filter(a => !a.done).length;
+
+    const current = activitiesInWindow.filter(a => {
+      const t = new Date(a.date).getTime();
+      return t >= now.getTime() && t <= now.getTime() + 30 * 60 * 1000;
+    }).length;
+
+    const upcoming = activitiesInWindow.filter(a => {
+      const t = new Date(a.date).getTime();
+      return t > now.getTime() + 30 * 60 * 1000;
+    }).length;
+
+    const tasks = activitiesInWindow.map(activity => {
+      const activityDate = new Date(activity.date);
+
+      let timeStatus: "past" | "current" | "upcoming";
+
+      if (activityDate.getTime() < now.getTime()) {
+        timeStatus = "past";
+      } else if (
+        activityDate.getTime() >= now.getTime() &&
+        activityDate.getTime() <= now.getTime() + 30 * 60 * 1000
+      ) {
+        timeStatus = "current";
+      } else {
+        timeStatus = "upcoming";
+      }
+
+      return {
+        id: Number(activity.id),
+        title: activity.task.title,
+        startTime: activity.date.toISOString(),
+        endTime: activity.date.toISOString(),
+        done: activity.done,
+        icon: activity.task.icon || "📝",
+        timeStatus
+      };
+    });
+
     const summary = {
-      total: tasksInWindow.length,
-      completed: tasksInWindow.filter(t => t.done).length,
-      pending: tasksInWindow.filter(t => !t.done).length,
-      current: tasksInWindow.filter(t => t.timeStatus === 'current' && !t.done).length,
-      upcoming: tasksInWindow.filter(t => t.timeStatus === 'upcoming' && !t.done).length
+      total,
+      completed,
+      pending,
+      current,
+      upcoming
     };
 
     return {
-      currentTime,
+      currentTime: now.toISOString(),
       currentDate,
       timeWindow: {
-        start: startTime,
-        end: endTime
+        start: startWindow.toISOString(),
+        end: endWindow.toISOString()
       },
-      tasks: tasksInWindow,
+      tasks,
       summary
     };
   }

@@ -1,10 +1,10 @@
 import { Activity } from "src/activities/activity.entity";
 import { User } from "src/user/user.entity";
-import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne, PrimaryColumn, OneToMany } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne, OneToMany } from "typeorm";
 
 @Entity()
 export class Children {
-    @PrimaryColumn('uuid')
+    @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column('uuid')
