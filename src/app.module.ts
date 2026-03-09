@@ -10,8 +10,6 @@ import { HouseholdsModule } from './households/households.module';
 import { TasksModule } from './tasks/tasks.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { ProfilesModule } from './profiles/profiles.modules';
-import { ChildrenController } from './setting/children.controller';
-import { ChildrenService } from './setting/children.service';
 import { RoutineController } from './setting/routine.controller';
 import { RoutineService } from './setting/routine.service';
 import { TasksService } from './setting/tasks.service';
@@ -21,6 +19,7 @@ import { UserModule } from './user/user.module';
 import { ChildrenModule } from './children/children.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { RoutineModule } from './routine/routine.module';
+import { ChildrenSettingModule } from './setting/children-setting.module';
 
 // Import setting controllers and services
 
@@ -42,6 +41,7 @@ import { RoutineModule } from './routine/routine.module';
     ChildrenModule,
     ActivitiesModule,
     RoutineModule,
+    ChildrenSettingModule,
     PrismaModule
   ],
   controllers: [
