@@ -20,7 +20,7 @@ export class RoutineService {
   }
 
   async findOne(id: number): Promise<Routine> {
-    const routine = await this.routineRepository.findOneBy({ id });
+    const routine = await this.routineRepository.findOneBy({ id: id.toString() });
     if (!routine) {
       throw new NotFoundException(`Routine with ID ${id} not found`);
     }
@@ -28,7 +28,7 @@ export class RoutineService {
   }
 
   async findByChildId(childId: number): Promise<Routine[]> {
-    return this.routineRepository.findBy({ child_id: childId });
+    return this.routineRepository.findBy({ child_id: childId.toString() });
   }
 
   async findByDayOfWeek(dayOfWeek: number): Promise<Routine[]> {
@@ -36,7 +36,7 @@ export class RoutineService {
   }
 
   async update(id: number, data: Partial<Routine>): Promise<Routine> {
-    const routine = await this.routineRepository.findOneBy({ id });
+    const routine = await this.routineRepository.findOneBy({ id: id.toString() });
     if (!routine) {
       throw new NotFoundException(`Routine with ID ${id} not found`);
     }

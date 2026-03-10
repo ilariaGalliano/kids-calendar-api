@@ -1,4 +1,5 @@
 import { Activity } from "src/activities/activity.entity";
+import { Routine } from "src/routine/routine.entity";
 import { User } from "src/user/user.entity";
 import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne, OneToMany } from "typeorm";
 
@@ -31,4 +32,7 @@ export class Children {
 
     @OneToMany(() => Activity, (activity) => activity.children)
     activities: Activity[];
+
+    @OneToMany(() => Routine, (routine) => routine.children)
+    routine: Routine[];
 }

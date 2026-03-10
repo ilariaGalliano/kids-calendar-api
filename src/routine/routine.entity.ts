@@ -1,15 +1,28 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Activity } from 'src/activities/activity.entity';
+import { Children } from 'src/children/children.entity';
+import { User } from 'src/user/user.entity';
+import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 
 @Entity('routine')
 export class Routine {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ type: 'integer' })
-  child_id: number;
+  // ...existing code...
 
-  @Column({ type: 'integer' })
-  user_id: number;
+  @ManyToOne(() => Children, (child) => child.routine, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'child_id' })
+  children: Children;
+
+  @Column({ name: 'child_id', nullable: true })
+  child_id: string;
+
+  @ManyToOne(() => User, (user) => user.children, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
+
+  @OneToMany(() => Activity, (activity) => activity.children)
+  activities: Activity[];
 
   @Column({ type: 'text' })
   nametask: string;
