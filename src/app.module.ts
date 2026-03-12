@@ -20,6 +20,9 @@ import { ChildrenModule } from './children/children.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { RoutineModule } from './routine/routine.module';
 import { ChildrenSettingModule } from './setting/children-setting.module';
+import { Routine } from './routine/routine.entity';
+import { Activity } from './activities/activity.entity';
+import { RoutineActivity } from './routine/routine-activity.entity';
 
 // Import setting controllers and services
 
@@ -32,6 +35,7 @@ import { ChildrenSettingModule } from './setting/children-setting.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
+    TypeOrmModule.forFeature([Routine, Activity, RoutineActivity]),
     DatabaseModule,                 // <--- IMPORTANTE
     HouseholdsModule,
     ProfilesModule,

@@ -19,7 +19,7 @@ export class ActivitiesService {
     return this.activityRepository.find();
   }
 
-  async findOne(id: number): Promise<Activity> {
+  async findOne(id: string): Promise<Activity> {
     const activity = await this.activityRepository.findOneBy({ id } as any);
     if (!activity) {
       throw new NotFoundException(`Activity with ID ${id} not found`);
@@ -27,7 +27,7 @@ export class ActivitiesService {
     return activity;
   }
 
-  async update(id: number, data: Partial<Activity>): Promise<Activity> {
+  async update(id: string, data: Partial<Activity>): Promise<Activity> {
     const activity = await this.activityRepository.findOneBy({ id } as any);
     if (!activity) {
       throw new NotFoundException(`Activity with ID ${id} not found`);
@@ -36,7 +36,7 @@ export class ActivitiesService {
     return this.activityRepository.save(updated);
   }
 
-  async delete(id: number): Promise<{ message: string }> {
+  async delete(id: string): Promise<{ message: string }> {
     const result = await this.activityRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Activity with ID ${id} not found`);
@@ -107,7 +107,7 @@ export class ActivitiesService {
   }
 
   // Trova tutte le activities per tutti i children di un utente in una settimana
-  async findWeekForUser(userId: number, startDate: string): Promise<Activity[]> {
+  async findWeekForUser(userId: string, startDate: string): Promise<Activity[]> {
     const start = new Date(startDate);
     const end = new Date(startDate);
     end.setDate(end.getDate() + 7);

@@ -4,8 +4,8 @@ import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne } from "t
 
 @Entity('activities')
 export class Activity {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Column({ type: 'text' })
     name_activity: string;
@@ -41,8 +41,8 @@ export class Activity {
     })
     updated_at: Date;
 
-    @Column({ type: 'integer' })
-    user_id: number;
+    @Column({ type: 'uuid' })
+    user_id: string;
 
     @Column({ type: 'uuid' })
     children_id: string;

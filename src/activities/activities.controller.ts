@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, ParseIntPipe, Query, UseGuards, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards, Req } from '@nestjs/common';
 import { Activity } from './activity.entity';
 import { ActivitiesService } from './activities.service';
 import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';
@@ -19,13 +19,13 @@ export class ActivitiesController {
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Activity> {
+  async findOne(@Param('id') id: string): Promise<Activity> {
     return this.activitiesService.findOne(id);
   }
 
   @Put(':id')
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() body: Partial<Activity>,
   ): Promise<Activity> {
     return this.activitiesService.update(id, body);
@@ -33,14 +33,14 @@ export class ActivitiesController {
 
   @Patch(':id')
   async patch(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() body: Partial<Activity>,
   ): Promise<Activity> {
     return this.activitiesService.update(id, body);
   }
 
   @Delete(':id')
-  async delete(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  async delete(@Param('id') id: string): Promise<{ message: string }> {
     return this.activitiesService.delete(id);
   }
 
@@ -85,6 +85,6 @@ export class ActivitiesController {
     if (!user?.sub) {
       return [];
     }
-    return this.activitiesService.findWeekForUser(parseInt(user.sub), startDate);
+    return this.activitiesService.findWeekForUser(user.sub, startDate);
   }
 }
