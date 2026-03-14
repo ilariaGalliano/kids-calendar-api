@@ -52,11 +52,7 @@ export class CreateRoutineDto {
 
   @IsOptional()
   @IsArray()
-  activities?: any[];
-
-  @IsOptional()
-  @IsArray()
-  activityIds?: any[];
+  taskIds?: any[];
 
   @IsOptional()
   @IsBoolean()

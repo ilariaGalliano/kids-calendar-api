@@ -4,18 +4,18 @@ import { In, Repository } from 'typeorm';
 import { CreateRoutineDto } from './dto/create-routine.dto';
 import { UpdateRoutineDto } from './dto/update-routine.dto';
 import { Routine } from 'src/routine/routine.entity';
-import { Activity } from 'src/activities/activity.entity';
-import { RoutineActivity } from 'src/routine/routine-activity.entity';
+import { TaskEntity } from 'src/tasks/task.entity';
+import { RoutineTask } from 'src/routine/routine-task.entity';
 
 @Injectable()
 export class RoutineService {
   constructor(
     @InjectRepository(Routine)
     private readonly routineRepository: Repository<Routine>,
-    @InjectRepository(Activity)
-    private readonly activityRepository: Repository<Activity>,
-    @InjectRepository(RoutineActivity)
-    private readonly routineActivitiesRepository: Repository<RoutineActivity>,
+    @InjectRepository(TaskEntity)
+    private readonly taskRepository: Repository<TaskEntity>,
+    @InjectRepository(RoutineTask)
+    private readonly routineTasksRepository: Repository<RoutineTask>,
   ) {}
 
   private dayCodeToNumber(day?: string): number {
@@ -31,7 +31,7 @@ export class RoutineService {
     return map[(day ?? 'mon').toLowerCase()] ?? 1;
   }
 
-  private extractActivityIds(input: any): string[] {
+  private extractTaskIds(input: any): string[] {
     if (!Array.isArray(input)) return [];
 
     const normalized = input
@@ -46,22 +46,22 @@ export class RoutineService {
     return Array.from(new Set(normalized));
   }
 
-  private async attachActivities(routines: Routine[]): Promise<any[]> {
+  private async attachTasks(routines: Routine[]): Promise<any[]> {
     if (!routines.length) return [];
 
     const routineIds = routines.map((r) => r.id);
-    const links = await this.routineActivitiesRepository.find({
+    const links = await this.routineTasksRepository.find({
       where: { routine_id: In(routineIds) },
       order: { sort_order: 'ASC', id: 'ASC' },
     });
 
-    const activityIds = Array.from(new Set(links.map((l) => l.activity_id)));
-    const activities = activityIds.length
-      ? await this.activityRepository.findBy({ id: In(activityIds) as any })
+    const taskIds = Array.from(new Set(links.map((l) => l.task_id)));
+    const tasks = taskIds.length
+      ? await this.taskRepository.findBy({ id: In(taskIds) as any })
       : [];
 
-    const activityById = new Map<string, Activity>(activities.map((a) => [String(a.id), a]));
-    const linksByRoutine = new Map<string, RoutineActivity[]>();
+    const taskById = new Map<string, TaskEntity>(tasks.map((task) => [String(task.id), task]));
+    const linksByRoutine = new Map<string, RoutineTask[]>();
 
     for (const link of links) {
       const arr = linksByRoutine.get(link.routine_id) ?? [];
@@ -72,8 +72,18 @@ export class RoutineService {
     return routines.map((routine) => ({
       ...routine,
       tasks: (linksByRoutine.get(routine.id) ?? [])
-        .map((link) => activityById.get(String(link.activity_id)))
-        .filter(Boolean),
+        .map((link) => taskById.get(String(link.task_id)))
+        .filter(Boolean)
+        .map((task) => ({
+          id: task!.id,
+          title: task!.title,
+          description: task!.description ?? '',
+          color: task!.color ?? '#4ECDC4',
+          emoji: task!.icon ?? '🎯',
+          duration: task!.duration ?? 5,
+          reward: task!.reward ?? 0,
+          isActive: task!.is_active ?? true,
+        })),
     }));
   }
 
@@ -91,7 +101,7 @@ export class RoutineService {
       order: { created_at: 'DESC' },
     });
 
-    return this.attachActivities(routines);
+    return this.attachTasks(routines);
   }
 
   async createRoutine(dto: CreateRoutineDto & any) {
@@ -111,23 +121,21 @@ export class RoutineService {
 
     const savedRoutine = await this.routineRepository.save(routine);
 
-    const activityIds = this.extractActivityIds(
-      dto.activityIds ?? dto.activities ?? dto.tasks,
-    );
+    const taskIds = this.extractTaskIds(dto.taskIds ?? dto.tasks);
 
-    if (activityIds.length > 0) {
-      await this.routineActivitiesRepository.save(
-        activityIds.map((activityId, index) =>
-          this.routineActivitiesRepository.create({
+    if (taskIds.length > 0) {
+      await this.routineTasksRepository.save(
+        taskIds.map((taskId, index) =>
+          this.routineTasksRepository.create({
             routine_id: savedRoutine.id,
-            activity_id: activityId,
+            task_id: taskId,
             sort_order: index,
           }),
         ),
       );
     }
 
-    const enriched = await this.attachActivities([savedRoutine]);
+    const enriched = await this.attachTasks([savedRoutine]);
     return enriched[0] ?? savedRoutine;
   }
 
@@ -160,22 +168,19 @@ export class RoutineService {
 
     const savedRoutine = await this.routineRepository.save(routine);
 
-    const hasActivityPatch =
-      dto.activityIds !== undefined || dto.activities !== undefined || dto.tasks !== undefined;
+    const hasTaskPatch = dto.taskIds !== undefined || dto.tasks !== undefined;
 
-    if (hasActivityPatch) {
-      const activityIds = this.extractActivityIds(
-        dto.activityIds ?? dto.activities ?? dto.tasks,
-      );
+    if (hasTaskPatch) {
+      const taskIds = this.extractTaskIds(dto.taskIds ?? dto.tasks);
 
-      await this.routineActivitiesRepository.delete({ routine_id: id });
+      await this.routineTasksRepository.delete({ routine_id: id });
 
-      if (activityIds.length > 0) {
-        await this.routineActivitiesRepository.save(
-          activityIds.map((activityId, index) =>
-            this.routineActivitiesRepository.create({
+      if (taskIds.length > 0) {
+        await this.routineTasksRepository.save(
+          taskIds.map((taskId, index) =>
+            this.routineTasksRepository.create({
               routine_id: savedRoutine.id,
-              activity_id: activityId,
+              task_id: taskId,
               sort_order: index,
             }),
           ),
@@ -183,12 +188,12 @@ export class RoutineService {
       }
     }
 
-    const enriched = await this.attachActivities([savedRoutine]);
+    const enriched = await this.attachTasks([savedRoutine]);
     return enriched[0] ?? savedRoutine;
   }
 
   async deleteRoutine(id: string) {
-    await this.routineActivitiesRepository.delete({ routine_id: id });
+    await this.routineTasksRepository.delete({ routine_id: id });
     const result = await this.routineRepository.delete(id);
     return (result.affected ?? 0) > 0;
   }

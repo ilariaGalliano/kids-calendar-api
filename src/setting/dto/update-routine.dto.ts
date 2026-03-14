@@ -52,11 +52,7 @@ export class UpdateRoutineDto {
 
   @IsOptional()
   @IsArray()
-  activities?: any[];
-
-  @IsOptional()
-  @IsArray()
-  activityIds?: any[];
+  taskIds?: any[];
 
   @IsOptional()
   @IsString()

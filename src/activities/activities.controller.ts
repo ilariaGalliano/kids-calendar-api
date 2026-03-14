@@ -82,9 +82,28 @@ export class ActivitiesController {
     @Query('startDate') startDate: string
   ): Promise<Activity[]> {
     const user = req.user as { sub?: string } | undefined;
-    if (!user?.sub) {
-      return [];
-    }
+    if (!user?.sub) return [];
     return this.activitiesService.findWeekForUser(user.sub, startDate);
+  }
+
+  // GET /activities/me/day?date=2026-03-14 - Giorno per tutti i children dell'utente loggato
+  @UseGuards(SupabaseJwtGuard)
+  @Get('me/day')
+  async findMyDay(
+    @Req() req: Request,
+    @Query('date') date: string
+  ): Promise<Activity[]> {
+    const user = req.user as { sub?: string } | undefined;
+    if (!user?.sub) return [];
+    return this.activitiesService.findDayForUser(user.sub, date);
+  }
+
+  // GET /activities/me/now - Ora corrente per tutti i children dell'utente loggato
+  @UseGuards(SupabaseJwtGuard)
+  @Get('me/now')
+  async findMyNow(@Req() req: Request): Promise<Activity[]> {
+    const user = req.user as { sub?: string } | undefined;
+    if (!user?.sub) return [];
+    return this.activitiesService.findNowForUser(user.sub);
   }
 }

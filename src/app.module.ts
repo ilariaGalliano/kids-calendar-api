@@ -21,8 +21,8 @@ import { ActivitiesModule } from './activities/activities.module';
 import { RoutineModule } from './routine/routine.module';
 import { ChildrenSettingModule } from './setting/children-setting.module';
 import { Routine } from './routine/routine.entity';
-import { Activity } from './activities/activity.entity';
-import { RoutineActivity } from './routine/routine-activity.entity';
+import { TaskEntity } from './tasks/task.entity';
+import { RoutineTask } from './routine/routine-task.entity';
 
 // Import setting controllers and services
 
@@ -35,7 +35,7 @@ import { RoutineActivity } from './routine/routine-activity.entity';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    TypeOrmModule.forFeature([Routine, Activity, RoutineActivity]),
+    TypeOrmModule.forFeature([Routine, TaskEntity, RoutineTask]),
     DatabaseModule,                 // <--- IMPORTANTE
     HouseholdsModule,
     ProfilesModule,

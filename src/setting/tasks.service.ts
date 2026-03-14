@@ -1,40 +1,87 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { TaskEntity } from 'src/tasks/task.entity';
 
 @Injectable()
 export class TasksService {
-  private tasks: any[] = [
-    { id: 't1', title: 'Lavare i denti', emoji: '🦷', color: '#4ECDC4', duration: 5, isActive: true, description: 'Lava bene i denti!', reward: 1 },
-    { id: 't2', title: 'Vestirsi', emoji: '👕', color: '#45B7D1', duration: 10, isActive: true, description: 'Scegli i vestiti!', reward: 2 },
-    { id: 't3', title: 'Riordinare stanza', emoji: '�️', color: '#FFEAA7', duration: 7, isActive: true, description: 'Sistema i giochi e il letto.', reward: 3 }
-  ];
+  constructor(
+    @InjectRepository(TaskEntity)
+    private readonly taskRepository: Repository<TaskEntity>,
+  ) {}
 
-  getTasks(timeOfDay?: string) {
-    if (timeOfDay) {
-      // Filtra per categoria se richiesto
-      return this.tasks.filter(t => t.category === timeOfDay);
-    }
-    return this.tasks;
+  async getTasks(userId?: string, _timeOfDay?: string) {
+    const tasks = await this.taskRepository.find({
+      where: userId ? { created_by_id: userId } : {},
+      order: { created_at: 'DESC' },
+    });
+
+    return tasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      emoji: task.icon ?? '🎯',
+      color: task.color ?? '#4ECDC4',
+      duration: task.duration ?? 5,
+      isActive: task.is_active ?? true,
+      description: task.description ?? '',
+      reward: task.reward ?? 0,
+    }));
   }
 
-  createTask(dto: CreateTaskDto) {
-    const task = { ...dto, id: Date.now().toString(), reward: dto.reward ?? 0 };
-    this.tasks.push(task);
-    return task;
+  async createTask(userId: string, dto: CreateTaskDto) {
+    const task = this.taskRepository.create({
+      title: dto.title,
+      description: dto.description ?? null,
+      color: dto.color ?? '#4ECDC4',
+      icon: dto.emoji ?? '🎯',
+      duration: dto.duration ?? 5,
+      reward: dto.reward ?? 0,
+      is_active: dto.isActive ?? true,
+      created_by_id: userId ?? null,
+    });
+
+    const saved = await this.taskRepository.save(task);
+    return {
+      id: saved.id,
+      title: saved.title,
+      emoji: saved.icon ?? '🎯',
+      color: saved.color ?? '#4ECDC4',
+      duration: saved.duration ?? 5,
+      isActive: saved.is_active ?? true,
+      description: saved.description ?? '',
+      reward: saved.reward ?? 0,
+    };
   }
 
-  updateTask(id: string, dto: UpdateTaskDto) {
-    const idx = this.tasks.findIndex(t => t.id === id);
-    if (idx === -1) return null;
-    this.tasks[idx] = { ...this.tasks[idx], ...dto, reward: dto.reward ?? this.tasks[idx].reward };
-    return this.tasks[idx];
+  async updateTask(id: string, dto: UpdateTaskDto) {
+    const task = await this.taskRepository.findOneBy({ id });
+    if (!task) return null;
+
+    if (dto.title !== undefined) task.title = dto.title;
+    if (dto.description !== undefined) task.description = dto.description;
+    if (dto.color !== undefined) task.color = dto.color;
+    if (dto.emoji !== undefined) task.icon = dto.emoji;
+    if (dto.duration !== undefined) task.duration = dto.duration;
+    if (dto.isActive !== undefined) task.is_active = dto.isActive;
+    if (dto.reward !== undefined) task.reward = dto.reward;
+
+    const saved = await this.taskRepository.save(task);
+    return {
+      id: saved.id,
+      title: saved.title,
+      emoji: saved.icon ?? '🎯',
+      color: saved.color ?? '#4ECDC4',
+      duration: saved.duration ?? 5,
+      isActive: saved.is_active ?? true,
+      description: saved.description ?? '',
+      reward: saved.reward ?? 0,
+    };
   }
 
-  deleteTask(id: string) {
-    const idx = this.tasks.findIndex(t => t.id === id);
-    if (idx === -1) return false;
-    this.tasks.splice(idx, 1);
-    return true;
+  async deleteTask(id: string) {
+    const result = await this.taskRepository.delete(id);
+    return (result.affected ?? 0) > 0;
   }
 }
