@@ -1,9 +1,9 @@
 import { Controller, Get, Patch, Body, Param, Query, UseGuards, Logger } from '@nestjs/common';
 import { CalendarService } from './calendar.service';
-import { JwtStrategy } from '../auth/jwt.strategy';
 import { CalendarDay, CalendarWeek, CalendarResponse, CurrentTimeWindowResponse } from './calendar.interfaces';
+import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';
 
-// @UseGuards(JwtStrategy)
+@UseGuards(SupabaseJwtGuard)
 @Controller('calendar')
 export class CalendarController {
   private readonly logger = new Logger(CalendarController.name);
@@ -49,13 +49,13 @@ export class CalendarController {
   }
 
   // Endpoint per vista "Ora Corrente" - attività nelle prossime/precedenti 2 ore
-  @Get('now')
+  @Get('child/:childId/now')
   async getCurrentTimeWindow(
-    @Query('householdId') householdId: string,
+    @Param('childId') childId: string,
     @Query('datetime') datetime?: string
   ): Promise<CurrentTimeWindowResponse> {
-    this.logger.log(`GET /calendar/now household=${householdId} datetime=${datetime}`);
-    return this.svc.getCurrentTimeWindow(householdId, datetime);
+    this.logger.log(`GET /calendar/child/${childId}/now datetime=${datetime}`);
+    return this.svc.getCurrentTimeWindow(childId, datetime);
   }
 
   @Patch(':id/done')

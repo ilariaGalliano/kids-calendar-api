@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { CreateRoutineDto } from './dto/create-routine.dto';
 import { UpdateRoutineDto } from './dto/update-routine.dto';
 import { RoutineService } from './routine.service';
@@ -7,10 +7,17 @@ import { RoutineService } from './routine.service';
 export class RoutineController {
   constructor(private readonly routineService: RoutineService) {}
 
-  // 1. Get routines for a child
+  // 1. Get routines for one child or multiple children in one call
   @Get()
-  getRoutines(@Query('childId') childId: string) {
-    return this.routineService.getRoutines(childId);
+  getRoutines(
+    @Query('childId') childId?: string,
+    @Query('childIds') childIds?: string,
+  ) {
+    const parsedChildIds = childIds
+      ? childIds.split(',').map((id) => id.trim()).filter(Boolean)
+      : undefined;
+
+    return this.routineService.getRoutines(childId, parsedChildIds);
   }
 
   // 2. Create a new routine for a child

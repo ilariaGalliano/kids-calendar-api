@@ -98,21 +98,33 @@ export class MockDbService {
     }
   }
   // tabelle in-memory
-  public users: AppUser[] = [];
+  public appUsers: AppUser[] = [];
   public households: Household[] = [];
   public profiles: Profile[] = [];
   public tasks: Task[] = [];
   public instances: TaskInstance[] = [];
 
-  // -------------------- appUser --------------------
+  // -------------------- AppUser --------------------
   appUser = {
     findUnique: async ({ where: { email } }: any): Promise<AppUser | null> => {
-      return this.users.find(u => u.email === email) || null;
+      return this.appUsers.find(u => u.email === email) || null;
     },
     create: async ({ data }: any): Promise<AppUser> => {
       const row: AppUser = { id: cuid(), createdAt: new Date(), ...data };
-      this.users.push(row);
+      this.appUsers.push(row);
       return row;
+    },
+    // AGGIUNGI QUESTO:
+    upsert: async ({ where: { email }, update, create }: any): Promise<AppUser> => {
+      let user = this.appUsers.find(u => u.email === email);
+      if (user) {
+        Object.assign(user, update);
+        return user;
+      } else {
+        const row: AppUser = { id: cuid(), createdAt: new Date(), ...create };
+        this.appUsers.push(row);
+        return row;
+      }
     },
   };
 
@@ -125,6 +137,14 @@ export class MockDbService {
     },
     findUnique: async ({ where: { id } }: any): Promise<Household | null> => {
       return this.households.find(h => h.id === id) || null;
+    },
+    // AGGIUNGI QUESTO:
+    findFirst: async ({ where }: any): Promise<Household | null> => {
+      // Supporta solo ricerca per ownerId (adatta se serve altro)
+      if (where?.ownerId) {
+        return this.households.find(h => h.ownerId === where.ownerId) || null;
+      }
+      return this.households[0] || null;
     },
   };
 
@@ -146,9 +166,31 @@ export class MockDbService {
       this.profiles.push(row);
       return row;
     },
+    findFirst: async ({ where }: any): Promise<Profile | null> => {
+      // Esempio: cerca per householdId, role, type, ecc.
+      return this.profiles.find(p => {
+        let ok = true;
+        if (where?.householdId !== undefined) ok = ok && p.householdId === where.householdId;
+        if (where?.role !== undefined) ok = ok && p.role === where.role;
+        if (where?.type !== undefined) ok = ok && p.type === where.type;
+        if (where?.id !== undefined) ok = ok && p.id === where.id;
+        return ok;
+      }) || null;
+    },
     findMany: async ({ where: { householdId } }: any): Promise<Profile[]> => {
       return this.profiles.filter(p => p.householdId === householdId);
     },
+    upsert: async ({ where: { id }, update, create }: any): Promise<Profile> => {
+      let profile = this.profiles.find(p => p.id === id);
+      if (profile) {
+        Object.assign(profile, update);
+        return profile;
+      } else {
+        const row: Profile = { id: id || cuid(), createdAt: new Date(), pinned: false, avatarUrl: null, color: null, createdById: null, ...create };
+        this.profiles.push(row);
+        return row;
+      }
+    }
   };
 
   // -------------------- task --------------------
@@ -179,6 +221,17 @@ export class MockDbService {
       this.tasks.push(row);
       return row;
     },
+    upsert: async ({ where: { id }, update, create }: any): Promise<Task> => {
+      let task = this.tasks.find(t => t.id === id);
+      if (task) {
+        Object.assign(task, update);
+        return task;
+      } else {
+        const row: Task = { id: id || cuid(), createdAt: new Date(), isActive: true, ...create };
+        this.tasks.push(row);
+        return row;
+      }
+    }
   };
 
   // -------------------- taskInstance --------------------
@@ -247,17 +300,17 @@ export class MockDbService {
   // -------------------- seed helpers --------------------
   /** opzionale: genera una famiglia demo con 3 profili e qualche task/istanza */
   seedDemo() {
-    // user
-    const user: AppUser = {
+    // AppUser
+    const appUser: AppUser = {
       id: cuid(), email: 'demo@demo.it', passwordHash: '$2b$10$hash', createdAt: new Date(),
     };
-    this.users.push(user);
+    this.appUsers.push(appUser);
 
     // household - usiamo un ID fisso per il test
     const hh: Household = {
       id: '6fcd9bea3-d818-46b4-b04b-915b9b231049', // ID fisso per il test
       name: 'Famiglia Demo',
-      ownerId: user.id,
+      ownerId: appUser.id,
       createdAt: new Date()
     };
     this.households.push(hh);
@@ -444,7 +497,7 @@ export class MockDbService {
 
     this.instances.push(...instances);
 
-    return { user, hh, admin, kid1, kid2, tasks, instances };
+    return { appUser, hh, admin, kid1, kid2, tasks, instances };
   }
 }
 
@@ -452,10 +505,4 @@ export class MockDbService {
 if (require.main === module) {
   const db = new MockDbService();
   db.seedDemo();
-  console.log('Households:', db.households.length);
-  console.log('Profiles:', db.profiles.length);
-  console.log('Tasks:', db.tasks.length);
-  console.log('Instances:', db.instances.length);
-  // Esempio di una istanza
-  console.log('Esempio instance:', db.instances[0]);
 }

@@ -46,25 +46,13 @@ export interface CurrentTimeWindowResponse {
     end: string;   // HH:MM
   };
   tasks: Array<{
-    id: string;
-    taskId: string;
+    id: number;
     title: string;
-    description: string | null;
-    color: string | null;
-    icon: string | null;
-    startTime: string | null;
-    endTime: string | null;
+    startTime: string;
+    endTime: string;
     done: boolean;
-    doneAt: Date | null;
-    assigneeProfileId: string;
-    assigneeProfile: {
-      id: string;
-      displayName: string;
-      color: string | null;
-      avatarUrl: string | null;
-    } | null;
-    timeStatus: 'past' | 'current' | 'upcoming'; // Status rispetto all'ora corrente
-    minutesFromNow: number; // Minuti dall'ora corrente (negativo se passato)
+    icon?: string;
+    timeStatus: "past" | "current" | "upcoming";
   }>;
   summary: {
     total: number;

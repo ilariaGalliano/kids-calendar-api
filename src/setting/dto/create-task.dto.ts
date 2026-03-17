@@ -1,7 +1,9 @@
 export class CreateTaskDto {
-  name: string;
+  title: string;
+  emoji?: string;
+  color?: string;
   description?: string;
-  timeOfDay: 'morning' | 'afternoon' | 'evening';
-  timer?: number; // duration in minutes or seconds
+  duration?: number;
+  isActive?: boolean;
   reward?: number;
 }

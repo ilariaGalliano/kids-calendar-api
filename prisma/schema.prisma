@@ -14,35 +14,46 @@ datasource db {
 }
 
 model AppUser {
-  id          String     @id @default(uuid())
-  email       String     @unique
-  passwordHash String
-  createdAt   DateTime   @default(now())
-  households  Household[] @relation("UserHouseholds")
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relazione inversa con Household
+  households Household[] @relation("AppUserHouseholds")
+
+  @@map("app_users")
 }
 
 model Household {
   id        String   @id @default(uuid())
   name      String
-  ownerId   String
-  owner     AppUser  @relation(fields: [ownerId], references: [id], name: "UserHouseholds")
-  profiles  Profile[]
-  tasks     Task[]
-  createdAt DateTime @default(now())
+  ownerId   String   @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  owner    AppUser   @relation("AppUserHouseholds", fields: [ownerId], references: [id])
+  profiles Profile[]
+  tasks    Task[]
+
+  @@map("households")
 }
 
 model Profile {
-  id           String    @id @default(uuid())
-  householdId  String
-  household    Household @relation(fields: [householdId], references: [id])
-  displayName  String
-  type         ProfileType
-  role         ProfileRole
-  avatarUrl    String?
-  color        String?
-  pinned       Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  createdById  String?
+  id          String   @id @default(uuid())
+  householdId String   @map("household_id")
+  displayName String   @map("display_name")
+  avatarUrl   String?  @map("avatar_url")
+  color       String?
+  pinned      Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdById String?  @map("created_by_id")
+
+  type ProfileType
+  role ProfileRole
+
+  household Household @relation(fields: [householdId], references: [id])
+
+  @@map("profiles")
 }
 
 enum ProfileType {
@@ -56,29 +67,35 @@ enum ProfileRole {
 }
 
 model Task {
-  id           String    @id @default(uuid())
-  householdId  String
-  household    Household @relation(fields: [householdId], references: [id])
-  title        String
-  description  String?
-  color        String?
-  icon         String?
-  schedule     Json?     // es. { "rrule": "FREQ=DAILY;BYHOUR=8" }
-  createdById  String
-  createdAt    DateTime  @default(now())
-  isActive     Boolean   @default(true)
-  instances    TaskInstance[]
+  id          String   @id @default(uuid())
+  householdId String   @map("household_id")
+  title       String
+  description String?
+  color       String?
+  icon        String?
+  schedule    Json?
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  isActive    Boolean  @default(true) @map("is_active")
+
+  household Household      @relation(fields: [householdId], references: [id])
+  instances TaskInstance[]
+
+  @@map("tasks")
 }
 
 model TaskInstance {
-  id                 String   @id @default(uuid())
-  taskId             String
-  task               Task     @relation(fields: [taskId], references: [id])
-  assigneeProfileId  String
-  date               DateTime // usare solo la data (00:00) per giorno
-  startTime          String?  // HH:mm
-  endTime            String?
-  done               Boolean  @default(false)
-  doneAt             DateTime?
+  id                String    @id @default(uuid())
+  taskId            String    @map("task_id")
+  assigneeProfileId String    @map("assignee_profile_id")
+  date              DateTime
+  startTime         String?   @map("start_time")
+  endTime           String?   @map("end_time")
+  done              Boolean   @default(false)
+  doneAt            DateTime? @map("done_at")
+
+  task Task @relation(fields: [taskId], references: [id])
+
   @@unique([taskId, assigneeProfileId, date])
+  @@map("task_instances")
 }

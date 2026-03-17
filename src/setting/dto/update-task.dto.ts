@@ -1,6 +1,9 @@
 export class UpdateTaskDto {
-  name?: string;
+  title?: string;
+  emoji?: string;
+  color?: string;
   description?: string;
-  timeOfDay?: 'morning' | 'afternoon' | 'evening';
+  duration?: number;
+  isActive?: boolean;
   reward?: number;
 }
