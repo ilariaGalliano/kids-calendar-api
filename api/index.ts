@@ -14,7 +14,17 @@ async function bootstrap() {
       new ExpressAdapter(expressApp),
     );
 
-    app.enableCors();
+    // Configura CORS per Vercel
+    app.enableCors({
+      origin: [
+        'http://localhost:4200',              // Sviluppo locale
+        'https://calendar-kids.vercel.app',   // Produzione
+      ],
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    });
+
     await app.init();
 
     server = expressApp;
