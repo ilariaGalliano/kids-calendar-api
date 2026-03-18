@@ -32,7 +32,18 @@ import { RoutineTask } from './routine/routine-task.entity';
       type: 'postgres',
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,  // IMPORTANTE: non sincronizzare in prod
+      ssl: {
+        rejectUnauthorized: false
+      },
+      // Ottimizzazioni per Vercel serverless
+      poolSize: 1,
+      connectTimeoutMS: 10000,
+      extra: {
+        max: 1,
+        min: 0,
+        idleTimeoutMillis: 10000,
+      },
     }),
     TypeOrmModule.forFeature([Routine, TaskEntity, RoutineTask]),
     DatabaseModule,                 // <--- IMPORTANTE
