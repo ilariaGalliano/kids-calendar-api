@@ -33,6 +33,7 @@ export class ChildrenController {
         console.log('FETCHING CHILDREN FOR USER:', user.sub);
         return this.childrenSrv.findByUserId(user.sub);
     }
+    
     @Get('search')
     async searchChildren(@Query('name') name?:string,
         @Query('department') department?:string,): Promise<Children[]>{

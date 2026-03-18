@@ -4,12 +4,17 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { createClient } from '@supabase/supabase-js';
 import { Request } from 'express';
-import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class SupabaseJwtGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
+  private supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!
+  );
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
 
     const authHeader = req.headers.authorization;
@@ -18,25 +23,19 @@ export class SupabaseJwtGuard implements CanActivate {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    if (!token) {
-      throw new UnauthorizedException('Missing token');
+
+    const { data, error } = await this.supabase.auth.getUser(token);
+
+    if (error || !data.user) {
+      console.error('SUPABASE AUTH ERROR:', error);
+      throw new UnauthorizedException('Invalid Supabase token');
     }
 
-    try {
-      const payload = jwt.verify(
-        token,
-        process.env.SUPABASE_JWT_SECRET!,
-      ) as any;
+    req.user = {
+      sub: data.user.id,
+      email: data.user.email,
+    };
 
-      // 🔥 FONDAMENTALE
-      req.user = {
-        sub: payload.sub,
-        email: payload.email,
-      };
-
-      return true;
-    } catch {
-      throw new UnauthorizedException('Invalid Supabase JWT');
-    }
+    return true;
   }
 }
