@@ -4,42 +4,71 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Request } from 'express';
 
 @Injectable()
 export class SupabaseJwtGuard implements CanActivate {
-  private supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!
-  );
+  private supabaseClient: SupabaseClient | null = null;
+
+  // 🔥 Lazy initialization - crea il client solo quando serve
+  private getSupabaseClient(): SupabaseClient {
+    if (!this.supabaseClient) {
+      const url = process.env.SUPABASE_URL;
+      const key = process.env.SUPABASE_ANON_KEY;
+
+      if (!url || !key) {
+        console.error('❌ Missing Supabase env vars:', { 
+          SUPABASE_URL: !!url, 
+          SUPABASE_ANON_KEY: !!key 
+        });
+        throw new UnauthorizedException('Server configuration error');
+      }
+
+      console.log('✅ Creating Supabase client with URL:', url.substring(0, 30) + '...');
+      this.supabaseClient = createClient(url, key);
+    }
+    return this.supabaseClient;
+  }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
 
+    // ✅ Permetti OPTIONS senza autenticazione
     if (req.method === 'OPTIONS') {
+      console.log('✅ OPTIONS request - bypassing auth');
       return true;
     }
 
     const authHeader = req.headers.authorization;
     if (!authHeader) {
+      console.log('❌ Missing Authorization header');
       throw new UnauthorizedException('Missing Authorization header');
     }
 
     const token = authHeader.replace('Bearer ', '');
+    console.log('🔑 Validating token:', token.substring(0, 20) + '...');
 
-    const { data, error } = await this.supabase.auth.getUser(token);
+    try {
+      const supabase = this.getSupabaseClient();
+      const { data, error } = await supabase.auth.getUser(token);
 
-    if (error || !data.user) {
-      console.error('SUPABASE AUTH ERROR:', error);
-      throw new UnauthorizedException('Invalid Supabase token');
+      if (error || !data.user) {
+        console.error('❌ SUPABASE AUTH ERROR:', error?.message || 'No user data');
+        throw new UnauthorizedException('Invalid Supabase token');
+      }
+
+      console.log('✅ User authenticated:', data.user.id);
+
+      req.user = {
+        sub: data.user.id,
+        email: data.user.email,
+      };
+
+      return true;
+    } catch (error) {
+      console.error('❌ Guard error:', error);
+      throw new UnauthorizedException('Authentication failed');
     }
-
-    req.user = {
-      sub: data.user.id,
-      email: data.user.email,
-    };
-
-    return true;
   }
 }

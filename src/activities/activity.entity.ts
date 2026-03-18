@@ -1,5 +1,5 @@
-import { Children } from "src/children/children.entity";
-import { User } from "src/user/user.entity";
+import { Children } from "../children/children.entity";
+import { User } from "../user/user.entity";
 import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne } from "typeorm";
 
 @Entity('activities')

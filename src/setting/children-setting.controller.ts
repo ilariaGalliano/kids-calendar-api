@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Req, UseGuards } from '@nestjs/common';
-import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';// Adjust path as needed
+import { SupabaseJwtGuard } from '../auth/supabase-jwt.guard';
 import { ChildrenSettingService } from './children-setting.service';
 
 @Controller('settings/children')

@@ -2,10 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Activity } from './activity.entity';
-import { Children } from 'src/children/children.entity';
-import { Routine } from 'src/routine/routine.entity';
-import { RoutineTask } from 'src/routine/routine-task.entity';
-import { TaskEntity } from 'src/tasks/task.entity';
+import { Children } from '../children/children.entity';
+import { Routine } from '../routine/routine.entity';
+import { RoutineTask } from '../routine/routine-task.entity';
+import { TaskEntity } from '../tasks/task.entity';
 
 @Injectable()
 export class ActivitiesService {

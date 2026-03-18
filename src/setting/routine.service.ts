@@ -3,9 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { CreateRoutineDto } from './dto/create-routine.dto';
 import { UpdateRoutineDto } from './dto/update-routine.dto';
-import { Routine } from 'src/routine/routine.entity';
-import { TaskEntity } from 'src/tasks/task.entity';
-import { RoutineTask } from 'src/routine/routine-task.entity';
+import { Routine } from '../routine/routine.entity';
+import { TaskEntity } from '../tasks/task.entity';
+import { RoutineTask } from '../routine/routine-task.entity';
 
 @Injectable()
 export class RoutineService {

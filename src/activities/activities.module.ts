@@ -3,10 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Activity } from './activity.entity';
 import { ActivitiesController } from './activities.controller';
 import { ActivitiesService } from './activities.service';
-import { Children } from 'src/children/children.entity';
-import { Routine } from 'src/routine/routine.entity';
-import { RoutineTask } from 'src/routine/routine-task.entity';
-import { TaskEntity } from 'src/tasks/task.entity';
+import { Children } from '../children/children.entity';
+import { Routine } from '../routine/routine.entity';
+import { RoutineTask } from '../routine/routine-task.entity';
+import { TaskEntity } from '../tasks/task.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Activity, Children, Routine, RoutineTask, TaskEntity])],

@@ -1,6 +1,6 @@
-import { Activity } from "src/activities/activity.entity";
-import { Routine } from "src/routine/routine.entity";
-import { User } from "src/user/user.entity";
+import { Activity } from "../activities/activity.entity";
+import { Routine } from "../routine/routine.entity";
+import { User } from "../user/user.entity";
 import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne, OneToMany } from "typeorm";
 
 @Entity()

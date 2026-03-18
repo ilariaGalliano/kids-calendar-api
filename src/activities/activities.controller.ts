@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards, Req } from '@nestjs/common';
 import { Activity } from './activity.entity';
 import { ActivitiesService } from './activities.service';
-import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';
+import { SupabaseJwtGuard } from '../auth/supabase-jwt.guard';
 import type { Request } from 'express';
 
 @Controller('activities')

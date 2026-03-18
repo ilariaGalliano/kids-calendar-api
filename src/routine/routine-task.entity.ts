@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { Routine } from './routine.entity';
-import { TaskEntity } from 'src/tasks/task.entity';
+import { TaskEntity } from '../tasks/task.entity';
 
 @Entity('routine_tasks')
 @Unique(['routine_id', 'task_id'])

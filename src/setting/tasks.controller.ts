@@ -2,7 +2,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards 
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TasksService } from './tasks.service';
-import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';
+import { SupabaseJwtGuard } from '../auth/supabase-jwt.guard';
 
 @UseGuards(SupabaseJwtGuard)
 @Controller('settings/tasks')

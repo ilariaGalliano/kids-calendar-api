@@ -1,4 +1,4 @@
-import { Children } from "src/children/children.entity";
+import { Children } from "../children/children.entity";
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, PrimaryColumn } from "typeorm";
 
 @Entity()

@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';
+import { SupabaseJwtGuard } from '../auth/supabase-jwt.guard';
 import { UsersService } from './user.service';
 import { User } from './user.entity';
 
