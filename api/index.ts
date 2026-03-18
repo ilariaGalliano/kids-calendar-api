@@ -12,16 +12,14 @@ async function bootstrap() {
     const app = await NestFactory.create(
       AppModule,
       new ExpressAdapter(expressApp),
+      { logger: ['error', 'warn', 'log', 'debug'] },
     );
 
-    // Configura CORS per Vercel
+    // 🔥 CORS semplificato per Vercel serverless
     app.enableCors({
-      origin: [
-        'http://localhost:4200',              // Sviluppo locale
-        'https://calendar-kids.vercel.app',   // Produzione
-      ],
+      origin: true,  // Permetti tutte le origini per debug
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     });
 
@@ -34,22 +32,17 @@ async function bootstrap() {
 }
 
 export default async function handler(req: any, res: any) {
-  // Imposta CORS headers manualmente per Vercel
-  const allowedOrigins = [
-    'http://localhost:4200',
-    'https://calendar-kids.vercel.app',
-  ];
-  
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept');
-  }
+  console.log(`📥 ${req.method} ${req.url} - Origin: ${req.headers.origin || 'none'} - Auth: ${req.headers.authorization ? 'present' : 'missing'}`);
 
-  // Gestisci preflight OPTIONS request
+  // 🔥 CORS headers manuali per Vercel
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept');
+
+  // ✅ Gestisci preflight OPTIONS PRIMA di NestJS
   if (req.method === 'OPTIONS') {
+    console.log('✅ OPTIONS preflight - returning 200 with CORS headers');
     res.status(200).end();
     return;
   }
