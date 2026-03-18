@@ -9,7 +9,6 @@ import { PrismaService } from './prisma/prisma.service';
 import { HouseholdsModule } from './households/households.module';
 import { TasksModule } from './tasks/tasks.module';
 import { CalendarModule } from './calendar/calendar.module';
-import { ProfilesModule } from './profiles/profiles.modules';
 import { RoutineController } from './setting/routine.controller';
 import { RoutineService } from './setting/routine.service';
 import { TasksService } from './setting/tasks.service';
@@ -38,7 +37,6 @@ import { RoutineTask } from './routine/routine-task.entity';
     TypeOrmModule.forFeature([Routine, TaskEntity, RoutineTask]),
     DatabaseModule,                 // <--- IMPORTANTE
     HouseholdsModule,
-    ProfilesModule,
     TasksModule,
     CalendarModule,
     UserModule,
