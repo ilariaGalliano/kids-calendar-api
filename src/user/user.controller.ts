@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { SupabaseAuthGuard } from 'src/auth/supabase-auth/supabase-auth.guard';
+import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';
 import { UsersService } from './user.service';
 import { User } from './user.entity';
 
@@ -12,7 +12,7 @@ export class UsersController {
         return this.userervice.create(body);
     }
 
-    @UseGuards(SupabaseAuthGuard)
+    @UseGuards(SupabaseJwtGuard)
     @Get()
     async findAll(): Promise<User[]> {
         return this.userervice.findAll();

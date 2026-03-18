@@ -1,5 +1,4 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards, ParseUUIDPipe, Req } from '@nestjs/common';
-import { SupabaseAuthGuard } from 'src/auth/supabase-auth/supabase-auth.guard';
 import { SupabaseJwtGuard } from 'src/auth/supabase-jwt.guard';
 import type { Request } from 'express';
 import { Children } from './children.entity';
@@ -14,7 +13,7 @@ export class ChildrenController {
         return this.childrenSrv.create(body);
     }
 
-    @UseGuards(SupabaseAuthGuard)
+    @UseGuards(SupabaseJwtGuard)
     @Get()
     async findAll(): Promise<Children[]> {
         return this.childrenSrv.findAll();
