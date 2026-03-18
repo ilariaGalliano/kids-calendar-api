@@ -17,6 +17,10 @@ export class SupabaseJwtGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
 
+    if (req.method === 'OPTIONS') {
+      return true;
+    }
+
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       throw new UnauthorizedException('Missing Authorization header');
