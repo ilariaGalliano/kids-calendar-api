@@ -4,9 +4,7 @@ import { CalendarDay, CalendarWeek, CalendarResponse } from './calendar.interfac
 
 @Injectable()
 export class CalendarService {
-  constructor(private prisma: PrismaService) {
-    console.log('Prisma in CalendarService:', prisma.constructor.name);
-  }
+  constructor(private prisma: PrismaService) {}
 
   // Metodo originale per compatibilità
   list(householdId: string, from: string, to: string) {

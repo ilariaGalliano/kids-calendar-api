@@ -22,15 +22,10 @@ export class ChildrenController {
     @UseGuards(SupabaseJwtGuard)
     @Get('me')
     async findMine(@Req() req: Request): Promise<Children[]> {
-        console.log('AUTH HEADER:', req.headers.authorization);
-        console.log('USER FROM JWT:', req.user);
-        
         const user = req.user as { sub?: string } | undefined;
         if (!user?.sub) {
-            console.log('NO USER SUB FOUND');
             return [];
         }
-        console.log('FETCHING CHILDREN FOR USER:', user.sub);
         return this.childrenSrv.findByUserId(user.sub);
     }
     

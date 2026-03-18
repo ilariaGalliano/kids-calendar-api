@@ -25,7 +25,6 @@ export class SupabaseJwtGuard implements CanActivate {
         throw new UnauthorizedException('Server configuration error');
       }
 
-      console.log('✅ Creating Supabase client with URL:', url.substring(0, 30) + '...');
       this.supabaseClient = createClient(url, key);
     }
     return this.supabaseClient;
@@ -36,18 +35,15 @@ export class SupabaseJwtGuard implements CanActivate {
 
     // ✅ Permetti OPTIONS senza autenticazione
     if (req.method === 'OPTIONS') {
-      console.log('✅ OPTIONS request - bypassing auth');
       return true;
     }
 
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      console.log('❌ Missing Authorization header');
       throw new UnauthorizedException('Missing Authorization header');
     }
 
     const token = authHeader.replace('Bearer ', '');
-    console.log('🔑 Validating token:', token.substring(0, 20) + '...');
 
     try {
       const supabase = this.getSupabaseClient();
@@ -57,8 +53,6 @@ export class SupabaseJwtGuard implements CanActivate {
         console.error('❌ SUPABASE AUTH ERROR:', error?.message || 'No user data');
         throw new UnauthorizedException('Invalid Supabase token');
       }
-
-      console.log('✅ User authenticated:', data.user.id);
 
       req.user = {
         sub: data.user.id,
