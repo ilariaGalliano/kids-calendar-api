@@ -8,9 +8,31 @@ import { ChildrenService } from './children.service';
 export class ChildrenController {
     constructor(private readonly childrenSrv: ChildrenService){}
 
+    @UseGuards(SupabaseJwtGuard)
     @Post()
-    async createChildren(@Body() body: Partial<Children>): Promise<Children>{
-        return this.childrenSrv.create(body);
+    async createChildren(@Body() body: Partial<Children>, @Req() req: Request): Promise<Children>{
+        const user = req.user as { sub?: string } | undefined;
+        if (!user?.sub) {
+            throw new Error('User not authenticated');
+        }
+        // Assicura che user_id sia preso dal JWT
+        const childData = { ...body, user_id: user.sub };
+        return this.childrenSrv.create(childData);
+    }
+
+    @UseGuards(SupabaseJwtGuard)
+    @Post('batch')
+    async createChildrenBatch(@Body() body: { children: Partial<Children>[] }, @Req() req: Request): Promise<Children[]>{
+        const user = req.user as { sub?: string } | undefined;
+        if (!user?.sub) {
+            throw new Error('User not authenticated');
+        }
+        // Aggiungi user_id a tutti i bambini
+        const childrenWithUser = body.children.map(child => ({
+            ...child,
+            user_id: user.sub
+        }));
+        return this.childrenSrv.createBatch(childrenWithUser);
     }
 
     @UseGuards(SupabaseJwtGuard)

@@ -15,6 +15,11 @@ export class ChildrenService {
         return this.childrenRepository.save(children);
     }
 
+    async createBatch(childrenData: Partial<Children>[]): Promise<Children[]> {
+        const children = this.childrenRepository.create(childrenData);
+        return this.childrenRepository.save(children);
+    }
+
     async findAll(): Promise<Children[]> {
         return this.childrenRepository.find();
     }
