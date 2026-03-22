@@ -69,22 +69,60 @@ export class RoutineService {
       linksByRoutine.set(link.routine_id, arr);
     }
 
-    return routines.map((routine) => ({
-      ...routine,
-      tasks: (linksByRoutine.get(routine.id) ?? [])
-        .map((link) => taskById.get(String(link.task_id)))
-        .filter(Boolean)
-        .map((task) => ({
-          id: task!.id,
-          title: task!.title,
-          description: task!.description ?? '',
-          color: task!.color ?? '#4ECDC4',
-          emoji: task!.icon ?? '🎯',
-          duration: task!.duration ?? 5,
-          reward: task!.reward ?? 0,
-          isActive: task!.is_active ?? true,
-        })),
-    }));
+    return routines.map((routine) => {
+      const routineLinks = linksByRoutine.get(routine.id) ?? [];
+      
+      // Group tasks by day_of_week
+      const tasksByDay: Record<number, any[]> = {};
+      const taskIdsSeenPerDay: Record<number, Set<string>> = {};
+      
+      // Initialize tracking sets for each day
+      for (let i = 0; i < 7; i++) {
+        taskIdsSeenPerDay[i] = new Set();
+      }
+      
+      for (const link of routineLinks) {
+        const task = taskById.get(String(link.task_id));
+        if (!task) continue;
+        
+        const dayOfWeek = link.day_of_week ?? null;
+        const taskData = {
+          id: task.id,
+          title: task.title,
+          description: task.description ?? '',
+          color: task.color ?? '#4ECDC4',
+          emoji: task.icon ?? '🎯',
+          duration: task.duration ?? 5,
+          reward: task.reward ?? 0,
+          isActive: task.is_active ?? true,
+        };
+        
+        if (dayOfWeek === null) {
+          // Task applies to all days (legacy behavior)
+          // But only add if not already present with specific day_of_week
+          for (let i = 0; i < 7; i++) {
+            if (!taskIdsSeenPerDay[i].has(String(task.id))) {
+              if (!tasksByDay[i]) tasksByDay[i] = [];
+              tasksByDay[i].push(taskData);
+              taskIdsSeenPerDay[i].add(String(task.id));
+            }
+          }
+        } else {
+          // Task applies to specific day - takes priority over legacy
+          if (!taskIdsSeenPerDay[dayOfWeek].has(String(task.id))) {
+            if (!tasksByDay[dayOfWeek]) tasksByDay[dayOfWeek] = [];
+            tasksByDay[dayOfWeek].push(taskData);
+            taskIdsSeenPerDay[dayOfWeek].add(String(task.id));
+          }
+        }
+      }
+      
+      return {
+        ...routine,
+        tasksByDay, // New structure: { 0: [...], 1: [...], ... 6: [...] }
+        tasks: tasksByDay[routine.day_of_week] ?? [], // Keep backward compatibility
+      };
+    });
   }
 
   async getRoutines(childId?: string, childIds?: string[]) {
@@ -118,18 +156,45 @@ export class RoutineService {
 
     const savedRoutine = await this.routineRepository.save(routine);
 
-    const taskIds = this.extractTaskIds(dto.taskIds ?? dto.tasks);
+    // Handle tasksByDay if provided (new format)
+    if (dto.tasksByDay && typeof dto.tasksByDay === 'object') {
+      const taskEntries: any[] = [];
+      
+      for (const [dayStr, tasks] of Object.entries(dto.tasksByDay)) {
+        const dayOfWeek = parseInt(dayStr, 10);
+        const taskIds = this.extractTaskIds(tasks);
+        
+        taskIds.forEach((taskId, index) => {
+          taskEntries.push(
+            this.routineTasksRepository.create({
+              routine_id: savedRoutine.id,
+              task_id: taskId,
+              sort_order: index,
+              day_of_week: dayOfWeek,
+            }),
+          );
+        });
+      }
+      
+      if (taskEntries.length > 0) {
+        await this.routineTasksRepository.save(taskEntries);
+      }
+    } else {
+      // Legacy format: taskIds or tasks apply to all days
+      const taskIds = this.extractTaskIds(dto.taskIds ?? dto.tasks);
 
-    if (taskIds.length > 0) {
-      await this.routineTasksRepository.save(
-        taskIds.map((taskId, index) =>
-          this.routineTasksRepository.create({
-            routine_id: savedRoutine.id,
-            task_id: taskId,
-            sort_order: index,
-          }),
-        ),
-      );
+      if (taskIds.length > 0) {
+        await this.routineTasksRepository.save(
+          taskIds.map((taskId, index) =>
+            this.routineTasksRepository.create({
+              routine_id: savedRoutine.id,
+              task_id: taskId,
+              sort_order: index,
+              day_of_week: null, // null = applies to all days
+            }),
+          ),
+        );
+      }
     }
 
     const enriched = await this.attachTasks([savedRoutine]);
@@ -154,23 +219,70 @@ export class RoutineService {
 
     const savedRoutine = await this.routineRepository.save(routine);
 
-    const hasTaskPatch = dto.taskIds !== undefined || dto.tasks !== undefined;
-
-    if (hasTaskPatch) {
-      const taskIds = this.extractTaskIds(dto.taskIds ?? dto.tasks);
-
-      await this.routineTasksRepository.delete({ routine_id: id });
-
-      if (taskIds.length > 0) {
-        await this.routineTasksRepository.save(
-          taskIds.map((taskId, index) =>
+    // Handle tasksByDay if provided (update specific day's tasks)
+    if (dto.tasksByDay && typeof dto.tasksByDay === 'object') {
+      // First, check if there are any legacy tasks (day_of_week = NULL)
+      const legacyTasks = await this.routineTasksRepository.find({
+        where: { routine_id: id, day_of_week: null as any },
+      });
+      
+      // If we're adding day-specific tasks and there are legacy tasks, remove legacy tasks
+      if (legacyTasks.length > 0) {
+        await this.routineTasksRepository.delete({
+          routine_id: id,
+          day_of_week: null as any,
+        });
+      }
+      
+      const taskEntries: any[] = [];
+      
+      for (const [dayStr, tasks] of Object.entries(dto.tasksByDay)) {
+        const dayOfWeek = parseInt(dayStr, 10);
+        const taskIds = this.extractTaskIds(tasks);
+        
+        // Delete existing tasks for this specific day
+        await this.routineTasksRepository.delete({
+          routine_id: id,
+          day_of_week: dayOfWeek,
+        });
+        
+        // Add new tasks for this day
+        taskIds.forEach((taskId, index) => {
+          taskEntries.push(
             this.routineTasksRepository.create({
               routine_id: savedRoutine.id,
               task_id: taskId,
               sort_order: index,
+              day_of_week: dayOfWeek,
             }),
-          ),
-        );
+          );
+        });
+      }
+      
+      if (taskEntries.length > 0) {
+        await this.routineTasksRepository.save(taskEntries);
+      }
+    } else {
+      // Legacy format: replace all tasks
+      const hasTaskPatch = dto.taskIds !== undefined || dto.tasks !== undefined;
+
+      if (hasTaskPatch) {
+        const taskIds = this.extractTaskIds(dto.taskIds ?? dto.tasks);
+
+        await this.routineTasksRepository.delete({ routine_id: id });
+
+        if (taskIds.length > 0) {
+          await this.routineTasksRepository.save(
+            taskIds.map((taskId, index) =>
+              this.routineTasksRepository.create({
+                routine_id: savedRoutine.id,
+                task_id: taskId,
+                sort_order: index,
+                day_of_week: null,
+              }),
+            ),
+          );
+        }
       }
     }
 

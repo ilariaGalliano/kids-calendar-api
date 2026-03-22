@@ -1,9 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Routine } from './routine.entity';
 import { TaskEntity } from '../tasks/task.entity';
 
 @Entity('routine_tasks')
-@Unique(['routine_id', 'task_id'])
+// NOTE: Unique constraints are now managed by partial indexes in the database
+// - routine_tasks_unique_per_specific_day: (routine_id, task_id, day_of_week) WHERE day_of_week IS NOT NULL
+// - routine_tasks_unique_for_all_days: (routine_id, task_id) WHERE day_of_week IS NULL
 export class RoutineTask {
   @PrimaryGeneratedColumn()
   id: number;
@@ -16,6 +18,9 @@ export class RoutineTask {
 
   @Column({ type: 'integer', default: 0 })
   sort_order: number;
+
+  @Column({ type: 'integer', nullable: true })
+  day_of_week: number | null;
 
   @ManyToOne(() => Routine, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'routine_id' })
