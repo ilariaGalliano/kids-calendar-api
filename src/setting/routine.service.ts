@@ -53,6 +53,7 @@ export class RoutineService {
     const links = await this.routineTasksRepository.find({
       where: { routine_id: In(routineIds) },
       order: { sort_order: 'ASC', id: 'ASC' },
+      select: ['id', 'routine_id', 'task_id', 'sort_order', 'day_of_week'], // Explicitly select day_of_week
     });
 
     const taskIds = Array.from(new Set(links.map((l) => l.task_id)));

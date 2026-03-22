@@ -59,6 +59,7 @@ export class ActivitiesService {
     const links = await this.routineTaskRepository.find({
       where: { routine_id: In(routineIds) },
       order: { sort_order: 'ASC', id: 'ASC' },
+      select: ['id', 'routine_id', 'task_id', 'sort_order', 'day_of_week'], // Explicitly select day_of_week
     });
     if (!links.length) return [];
 
@@ -80,20 +81,43 @@ export class ActivitiesService {
     endDay.setHours(23, 59, 59, 999);
 
     while (cursor <= endDay) {
-      const dayDow = cursor.getDay();
+      const dayDow = cursor.getDay(); // 0=Sunday, 1=Monday, etc.
       const dayKey = this.formatDate(cursor);
 
       for (const routine of routines) {
-        if ((routine.day_of_week ?? -1) !== dayDow) continue;
-
         const routineLinks = linksByRoutine.get(routine.id) ?? [];
         const child = childById.get(routine.child_id);
+
+        // DEBUG: Log routine links for this day
+        console.log(`\n=== Processing ${dayKey} (day ${dayDow}) for routine ${routine.nametask} ===`);
+        console.log(`Total routine links: ${routineLinks.length}`);
+        routineLinks.forEach(link => {
+          console.log(`  Link ID ${link.id}: task_id=${link.task_id.substring(0,8)}, day_of_week=${link.day_of_week}, sort_order=${link.sort_order}`);
+        });
+
+        // Filter tasks for this specific day
+        const tasksForToday = routineLinks.filter(link => {
+          // If day_of_week is null, task applies to all days (legacy)
+          if (link.day_of_week === null || link.day_of_week === undefined) {
+            // For legacy tasks, check if routine.day_of_week matches
+            return (routine.day_of_week ?? -1) === dayDow;
+          }
+          // For day-specific tasks, check if task's day_of_week matches
+          return link.day_of_week === dayDow;
+        });
+
+        console.log(`Tasks for today after filter: ${tasksForToday.length}`);
+        tasksForToday.forEach(link => {
+          console.log(`  Filtered Link ID ${link.id}: task_id=${link.task_id.substring(0,8)}, day_of_week=${link.day_of_week}`);
+        });
+
+        if (tasksForToday.length === 0) continue;
 
         // Calculate start time for tasks in sequence
         let currentTime = new Date(cursor);
         currentTime.setHours(8, 0, 0, 0); // Default start time
 
-        for (const link of routineLinks) {
+        for (const link of tasksForToday) {
           const task = taskById.get(link.task_id);
           if (!task || task.is_active === false) continue;
 
@@ -126,6 +150,7 @@ export class ActivitiesService {
             task_id: task.id,
             child_name: child?.name,
             sort_order: link.sort_order,
+            day_of_week: link.day_of_week, // Include for debugging
           });
         }
       }
