@@ -19,22 +19,6 @@ export class CreateRoutineDto {
   nametask?: string;
 
   @IsOptional()
-  @IsString()
-  startTime: string;
-
-  @IsOptional()
-  @IsString()
-  start_time?: string;
-
-  @IsOptional()
-  @IsString()
-  endTime?: string;
-
-  @IsOptional()
-  @IsString()
-  end_time?: string;
-
-  @IsOptional()
   @IsArray()
   days: string[];
 
@@ -57,10 +41,6 @@ export class CreateRoutineDto {
   @IsOptional()
   @IsBoolean()
   isActive: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isDone?: boolean;
 
   @IsOptional()
   @IsString()

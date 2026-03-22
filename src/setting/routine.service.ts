@@ -114,9 +114,6 @@ export class RoutineService {
       nametask: dto.nametask ?? dto.name ?? 'Nuova routine',
       description: dto.description ?? '',
       day_of_week: normalizedDay,
-      start_time: dto.start_time ?? dto.startTime ?? '08:00',
-      end_time: dto.end_time ?? dto.endTime ?? null,
-      isDone: dto.isDone ?? false,
     } as Partial<Routine>);
 
     const savedRoutine = await this.routineRepository.save(routine);
@@ -153,17 +150,6 @@ export class RoutineService {
       routine.day_of_week = dto.day_of_week;
     } else if (Array.isArray(dto.days) && dto.days.length > 0) {
       routine.day_of_week = this.dayCodeToNumber(dto.days[0]);
-    }
-    if (dto.start_time !== undefined || dto.startTime !== undefined) {
-      routine.start_time = dto.start_time ?? dto.startTime;
-    }
-    if (dto.end_time !== undefined || dto.endTime !== undefined) {
-      routine.end_time = dto.end_time ?? dto.endTime;
-    }
-    if (dto.isDone !== undefined) {
-      routine.isDone = dto.isDone;
-    } else if (dto.isActive !== undefined) {
-      routine.isDone = !dto.isActive;
     }
 
     const savedRoutine = await this.routineRepository.save(routine);

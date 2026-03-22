@@ -50,7 +50,7 @@ export class ActivitiesService {
     const childById = new Map(children.map((c) => [c.id, c]));
 
     const routines = await this.routineRepository.find({
-      where: { child_id: In(childIds), isDone: false },
+      where: { child_id: In(childIds) },
       order: { created_at: 'ASC' },
     });
     if (!routines.length) return [];
@@ -89,15 +89,20 @@ export class ActivitiesService {
         const routineLinks = linksByRoutine.get(routine.id) ?? [];
         const child = childById.get(routine.child_id);
 
+        // Calculate start time for tasks in sequence
+        let currentTime = new Date(cursor);
+        currentTime.setHours(8, 0, 0, 0); // Default start time
+
         for (const link of routineLinks) {
           const task = taskById.get(link.task_id);
           if (!task || task.is_active === false) continue;
 
-          const startAt = this.combineDateAndTime(cursor, routine.start_time);
+          const startAt = new Date(currentTime);
           const duration = Number(task.duration ?? 5);
-          const endAt = routine.end_time
-            ? this.combineDateAndTime(cursor, routine.end_time)
-            : new Date(startAt.getTime() + duration * 60 * 1000);
+          const endAt = new Date(startAt.getTime() + duration * 60 * 1000);
+
+          // Update current time for next task
+          currentTime = new Date(endAt);
 
           if (startAt < start || startAt > end) continue;
 

@@ -15,22 +15,6 @@ export class UpdateRoutineDto {
   description?: string;
 
   @IsOptional()
-  @IsString()
-  startTime?: string;
-
-  @IsOptional()
-  @IsString()
-  start_time?: string;
-
-  @IsOptional()
-  @IsString()
-  endTime?: string;
-
-  @IsOptional()
-  @IsString()
-  end_time?: string;
-
-  @IsOptional()
   @IsBoolean()
   isActive?: boolean;
 
@@ -61,8 +45,4 @@ export class UpdateRoutineDto {
   @IsOptional()
   @IsString()
   child_id?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  isDone?: boolean;
 }

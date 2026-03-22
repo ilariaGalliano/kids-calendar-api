@@ -33,15 +33,6 @@ export class Routine {
   @Column({ type: 'integer' })
   day_of_week: number;
 
-  @Column({ type: 'varchar', length: 5 })
-  start_time: string;
-
-  @Column({ type: 'varchar', length: 5, nullable: true })
-  end_time: string;
-
-  @Column({ default: false })
-  isDone: boolean;
-
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
