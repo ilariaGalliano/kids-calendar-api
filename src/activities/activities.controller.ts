@@ -106,4 +106,28 @@ export class ActivitiesController {
     if (!user?.sub) return [];
     return this.activitiesService.findNowForUser(user.sub);
   }
+
+  // POST /activities/update-schedule - Salva modifiche drag & drop
+  @UseGuards(SupabaseJwtGuard)
+  @Post('update-schedule')
+  async updateSchedule(
+    @Req() req: Request,
+    @Body() updateScheduleDto: any
+  ): Promise<{ success: boolean; updated: number; errors: string[] }> {
+    const user = req.user as { sub?: string } | undefined;
+    if (!user?.sub) {
+      return { success: false, updated: 0, errors: ['User not authenticated'] };
+    }
+
+    const result = await this.activitiesService.updateSchedule(
+      user.sub,
+      updateScheduleDto.movedTasks
+    );
+
+    return {
+      success: result.errors.length === 0,
+      updated: result.updated,
+      errors: result.errors
+    };
+  }
 }

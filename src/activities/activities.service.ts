@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, IsNull } from 'typeorm';
 import { Activity } from './activity.entity';
 import { Children } from '../children/children.entity';
 import { Routine } from '../routine/routine.entity';
 import { RoutineTask } from '../routine/routine-task.entity';
 import { TaskEntity } from '../tasks/task.entity';
+import { RoutineActivityCompletion } from './routine-activity-completion.entity';
 
 @Injectable()
 export class ActivitiesService {
@@ -20,6 +21,8 @@ export class ActivitiesService {
     private readonly routineTaskRepository: Repository<RoutineTask>,
     @InjectRepository(TaskEntity)
     private readonly taskRepository: Repository<TaskEntity>,
+    @InjectRepository(RoutineActivityCompletion)
+    private readonly completionRepository: Repository<RoutineActivityCompletion>,
   ) {}
 
   private formatDate(date: Date): string {
@@ -67,6 +70,24 @@ export class ActivitiesService {
     const tasks = await this.taskRepository.findBy({ id: In(taskIds) });
     const taskById = new Map(tasks.map((t) => [t.id, t]));
 
+    // Load completions for this date range
+    const startDate = this.formatDate(start);
+    const endDate = this.formatDate(end);
+    const completions = await this.completionRepository
+      .createQueryBuilder('c')
+      .where('c.child_id IN (:...childIds)', { childIds })
+      .andWhere('c.date >= :startDate', { startDate })
+      .andWhere('c.date <= :endDate', { endDate })
+      .andWhere('c.done = true')
+      .getMany();
+
+    // Create a Map for quick lookup: key = "routineId_taskId_date"
+    const completionMap = new Map<string, RoutineActivityCompletion>();
+    completions.forEach(c => {
+      const key = `${c.routine_id}_${c.task_id}_${c.date}`;
+      completionMap.set(key, c);
+    });
+
     const linksByRoutine = new Map<string, RoutineTask[]>();
     for (const link of links) {
       const arr = linksByRoutine.get(link.routine_id) ?? [];
@@ -88,13 +109,6 @@ export class ActivitiesService {
         const routineLinks = linksByRoutine.get(routine.id) ?? [];
         const child = childById.get(routine.child_id);
 
-        // DEBUG: Log routine links for this day
-        console.log(`\n=== Processing ${dayKey} (day ${dayDow}) for routine ${routine.nametask} ===`);
-        console.log(`Total routine links: ${routineLinks.length}`);
-        routineLinks.forEach(link => {
-          console.log(`  Link ID ${link.id}: task_id=${link.task_id.substring(0,8)}, day_of_week=${link.day_of_week}, sort_order=${link.sort_order}`);
-        });
-
         // Filter tasks for this specific day
         const tasksForToday = routineLinks.filter(link => {
           // If day_of_week is null, task applies to all days (legacy)
@@ -104,11 +118,6 @@ export class ActivitiesService {
           }
           // For day-specific tasks, check if task's day_of_week matches
           return link.day_of_week === dayDow;
-        });
-
-        console.log(`Tasks for today after filter: ${tasksForToday.length}`);
-        tasksForToday.forEach(link => {
-          console.log(`  Filtered Link ID ${link.id}: task_id=${link.task_id.substring(0,8)}, day_of_week=${link.day_of_week}`);
         });
 
         if (tasksForToday.length === 0) continue;
@@ -130,13 +139,17 @@ export class ActivitiesService {
 
           if (startAt < start || startAt > end) continue;
 
+          // Check if this task was completed
+          const completionKey = `${routine.id}_${task.id}_${dayKey}`;
+          const isCompleted = completionMap.has(completionKey);
+
           out.push({
             id: `routine_${routine.id}_${task.id}_${dayKey}`,
             name_activity: task.title,
             value: task.reward ?? null,
             date_start: startAt,
             date_end: endAt,
-            done: false,
+            done: isCompleted,
             timer: duration,
             expire_time: null,
             description: task.description ?? routine.description,
@@ -183,12 +196,77 @@ export class ActivitiesService {
   }
 
   async update(id: string, data: Partial<Activity>): Promise<Activity> {
+    // Check if this is a routine-generated activity (ID format: routine_{routineId}_{taskId}_{date})
+    if (id.startsWith('routine_')) {
+      return this.updateRoutineActivity(id, data);
+    }
+
+    // Normal activity update
     const activity = await this.activityRepository.findOneBy({ id } as any);
     if (!activity) {
       throw new NotFoundException(`Activity with ID ${id} not found`);
     }
     const updated = Object.assign(activity, data);
     return this.activityRepository.save(updated);
+  }
+
+  private async updateRoutineActivity(id: string, data: Partial<Activity>): Promise<Activity> {
+    // Parse ID: routine_{routineId}_{taskId}_{date}
+    const parts = id.split('_');
+    if (parts.length < 4) {
+      throw new NotFoundException(`Invalid routine activity ID format: ${id}`);
+    }
+
+    const routineId = parts[1];
+    const taskId = parts[2];
+    const date = parts[3];
+
+    // Get child_id from routine
+    const routine = await this.routineRepository.findOne({ where: { id: routineId } });
+    if (!routine) {
+      throw new NotFoundException(`Routine ${routineId} not found`);
+    }
+
+    // If marking as done, create/update completion record
+    if (data.done !== undefined) {
+      if (data.done) {
+        // Mark as done
+        await this.completionRepository.upsert(
+          {
+            routine_id: routineId,
+            task_id: taskId,
+            child_id: routine.child_id,
+            date: date,
+            done: true,
+            completed_at: new Date(),
+            uncompleted_at: null,
+          },
+          ['routine_id', 'task_id', 'child_id', 'date']
+        );
+      } else {
+        // Mark as undone
+        await this.completionRepository.upsert(
+          {
+            routine_id: routineId,
+            task_id: taskId,
+            child_id: routine.child_id,
+            date: date,
+            done: false,
+            uncompleted_at: new Date(),
+          },
+          ['routine_id', 'task_id', 'child_id', 'date']
+        );
+      }
+    }
+
+    // Return a mock Activity object (since it doesn't exist in DB)
+    const task = await this.taskRepository.findOne({ where: { id: taskId } });
+    return {
+      id,
+      done: data.done ?? false,
+      name_activity: task?.title ?? 'Task',
+      // Add other required fields as needed
+    } as Activity;
   }
 
   async delete(id: string): Promise<{ message: string }> {
@@ -349,5 +427,152 @@ export class ActivitiesService {
 
     return [...db, ...routine]
       .sort((a: any, b: any) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime()) as Activity[];
+  }
+
+  // Aggiorna lo schedule quando l'utente sposta task via drag & drop
+  async updateSchedule(
+    userId: string,
+    movedTasks: Array<{
+      taskId: string;
+      fromDay: string;
+      toDay: string;
+      fromChildId: string;
+      toChildId: string;
+    }>,
+  ): Promise<{ updated: number; errors: string[] }> {
+    const errors: string[] = [];
+    let updated = 0;
+
+    for (const move of movedTasks) {
+      try {
+        // Verifica che il bambino appartenga all'utente
+        const child = await this.childrenRepository.findOne({
+          where: { id: move.toChildId, user_id: userId },
+        });
+
+        if (!child) {
+          errors.push(`Child ${move.toChildId} not found or not owned by user`);
+          continue;
+        }
+
+        // Calcola day_of_week dalla data
+        const toDayOfWeek = move.toDay === 'now' ? null : new Date(move.toDay).getDay();
+
+        // Se il bambino è cambiato, dobbiamo gestire diversamente
+        if (move.fromChildId !== move.toChildId) {
+          // Trova la routine del bambino di destinazione
+          let targetRoutine = await this.routineRepository.findOne({
+            where: { child_id: move.toChildId },
+          });
+
+          // Se non esiste una routine per il bambino, creala
+          if (!targetRoutine) {
+            targetRoutine = this.routineRepository.create({
+              child_id: move.toChildId,
+              nametask: `Routine ${child.name}`,
+              description: 'Routine',
+              day_of_week: 0,
+            });
+            await this.routineRepository.save(targetRoutine);
+          }
+
+          // Trova la routine del bambino di origine
+          const sourceRoutine = await this.routineRepository.findOne({
+            where: { child_id: move.fromChildId },
+          });
+
+          if (!sourceRoutine) {
+            errors.push(`Source routine not found for child ${move.fromChildId}`);
+            continue;
+          }
+
+          // Rimuovi il task dalla routine di origine
+          await this.routineTaskRepository.delete({
+            routine_id: sourceRoutine.id,
+            task_id: move.taskId,
+          });
+
+          // Verifica se il task esiste già nella routine di destinazione per quel giorno
+          const existingLink = await this.routineTaskRepository.findOne({
+            where: {
+              routine_id: targetRoutine.id,
+              task_id: move.taskId,
+              day_of_week: toDayOfWeek === null ? IsNull() : toDayOfWeek,
+            },
+          });
+
+          if (!existingLink) {
+            // Aggiungi il task alla routine di destinazione
+            const maxSortOrder = await this.routineTaskRepository
+              .createQueryBuilder('rt')
+              .where('rt.routine_id = :routineId', { routineId: targetRoutine.id })
+              .andWhere('rt.day_of_week = :dayOfWeek', { dayOfWeek: toDayOfWeek })
+              .select('MAX(rt.sort_order)', 'max')
+              .getRawOne();
+
+            const newSortOrder = (maxSortOrder?.max ?? -1) + 1;
+
+            const newLink = this.routineTaskRepository.create({
+              routine_id: targetRoutine.id,
+              task_id: move.taskId,
+              day_of_week: toDayOfWeek,
+              sort_order: newSortOrder,
+            });
+
+            await this.routineTaskRepository.save(newLink);
+          }
+        } else {
+          // Stesso bambino, giorno diverso - aggiorna solo day_of_week
+          const routine = await this.routineRepository.findOne({
+            where: { child_id: move.fromChildId },
+          });
+
+          if (!routine) {
+            errors.push(`Routine not found for child ${move.fromChildId}`);
+            continue;
+          }
+
+          const fromDayOfWeek = move.fromDay === 'now' ? null : new Date(move.fromDay).getDay();
+
+          // Trova il link da aggiornare
+          const link = await this.routineTaskRepository.findOne({
+            where: {
+              routine_id: routine.id,
+              task_id: move.taskId,
+              day_of_week: fromDayOfWeek === null ? IsNull() : fromDayOfWeek,
+            },
+          });
+
+          if (!link) {
+            errors.push(`Task ${move.taskId} not found in routine for day ${fromDayOfWeek}`);
+            continue;
+          }
+
+          // Verifica che non esista già per il giorno di destinazione
+          const existingLink = await this.routineTaskRepository.findOne({
+            where: {
+              routine_id: routine.id,
+              task_id: move.taskId,
+              day_of_week: toDayOfWeek === null ? IsNull() : toDayOfWeek,
+            },
+          });
+
+          if (existingLink && existingLink.id !== link.id) {
+            // Elimina il vecchio e mantieni il nuovo
+            await this.routineTaskRepository.delete(link.id);
+          } else {
+            // Aggiorna il day_of_week
+            link.day_of_week = toDayOfWeek;
+            await this.routineTaskRepository.save(link);
+          }
+        }
+
+        updated++;
+      } catch (error) {
+        errors.push(`Error moving task ${move.taskId}: ${error.message}`);
+      }
+    }
+
+    return { updated, errors };
   }
 }
