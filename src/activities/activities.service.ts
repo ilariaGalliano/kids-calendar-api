@@ -575,4 +575,97 @@ export class ActivitiesService {
 
     return { updated, errors };
   }
+
+  // Aggiorna l'ordine dei task (sort_order) per il riordino interno
+  async updateTaskOrder(
+    userId: string,
+    orderUpdates: Array<{
+      taskId: string;       // instanceId o task_id
+      childId: string;
+      day: string;          // data in formato YYYY-MM-DD
+      newPosition: number;
+    }>,
+  ): Promise<{ updated: number; errors: string[] }> {
+    const errors: string[] = [];
+    let updated = 0;
+
+    for (const update of orderUpdates) {
+      try {
+        // Verifica che il bambino appartenga all'utente
+        const child = await this.childrenRepository.findOne({
+          where: { id: update.childId, user_id: userId },
+        });
+
+        if (!child) {
+          errors.push(`Child ${update.childId} not found or not owned by user`);
+          continue;
+        }
+
+        // Trova la routine del bambino
+        const routine = await this.routineRepository.findOne({
+          where: { child_id: update.childId },
+        });
+
+        if (!routine) {
+          errors.push(`Routine not found for child ${update.childId}`);
+          continue;
+        }
+
+        // Estrai il task_id dall'instanceId se necessario
+        // Formato instanceId: routine_{routine_id}_{task_id}_{date}
+        let taskId = update.taskId;
+        if (taskId.startsWith('routine_')) {
+          const parts = taskId.split('_');
+          // routine_UUID_UUID_DATE → UUID è in parti [1] e [2..6]
+          // Format: routine_{routineId}_{taskId}_{date}
+          // Ricostruisci il task_id (UUID)
+          taskId = parts.slice(2, 7).join('-').replace(/-\d{4}-\d{2}-\d{2}$/, '');
+          // Più semplice: prendi tutto tra il secondo _ e l'ultima data
+          const match = update.taskId.match(/routine_[^_]+_([a-f0-9-]+)_\d{4}-\d{2}-\d{2}/);
+          if (match) {
+            taskId = match[1];
+          }
+        }
+
+        const dayOfWeek = update.day === 'now' ? null : new Date(update.day).getDay();
+
+        // Trova il link routine_task da aggiornare
+        const link = await this.routineTaskRepository.findOne({
+          where: {
+            routine_id: routine.id,
+            task_id: taskId,
+            day_of_week: dayOfWeek === null ? IsNull() : dayOfWeek,
+          },
+        });
+
+        if (!link) {
+          // Prova senza il filtro day_of_week
+          const linkAnyDay = await this.routineTaskRepository.findOne({
+            where: {
+              routine_id: routine.id,
+              task_id: taskId,
+            },
+          });
+
+          if (linkAnyDay) {
+            linkAnyDay.sort_order = update.newPosition;
+            await this.routineTaskRepository.save(linkAnyDay);
+            updated++;
+          } else {
+            errors.push(`Task ${taskId} not found in routine for child ${update.childId}`);
+          }
+          continue;
+        }
+
+        // Aggiorna sort_order
+        link.sort_order = update.newPosition;
+        await this.routineTaskRepository.save(link);
+        updated++;
+      } catch (error) {
+        errors.push(`Error updating order for task ${update.taskId}: ${error.message}`);
+      }
+    }
+
+    return { updated, errors };
+  }
 }

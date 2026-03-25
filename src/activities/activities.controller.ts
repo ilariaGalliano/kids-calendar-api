@@ -130,4 +130,28 @@ export class ActivitiesController {
       errors: result.errors
     };
   }
+
+  // POST /activities/update-order - Aggiorna l'ordine dei task (sort_order)
+  @UseGuards(SupabaseJwtGuard)
+  @Post('update-order')
+  async updateOrder(
+    @Req() req: Request,
+    @Body() updateOrderDto: { orderUpdates: Array<{ taskId: string; childId: string; day: string; newPosition: number }> }
+  ): Promise<{ success: boolean; updated: number; errors: string[] }> {
+    const user = req.user as { sub?: string } | undefined;
+    if (!user?.sub) {
+      return { success: false, updated: 0, errors: ['User not authenticated'] };
+    }
+
+    const result = await this.activitiesService.updateTaskOrder(
+      user.sub,
+      updateOrderDto.orderUpdates
+    );
+
+    return {
+      success: result.errors.length === 0,
+      updated: result.updated,
+      errors: result.errors
+    };
+  }
 }
