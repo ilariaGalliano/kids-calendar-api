@@ -22,6 +22,15 @@ export class RoutineTask {
   @Column({ type: 'integer', nullable: true })
   day_of_week: number | null;
 
+  @Column({ type: 'time', nullable: true })
+  start_time: string | null;
+
+  @Column({ type: 'time', nullable: true })
+  end_time: string | null;
+
+  @Column({ type: 'integer', nullable: true })
+  duration: number | null;
+
   @ManyToOne(() => Routine, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'routine_id' })
   routine: Routine;

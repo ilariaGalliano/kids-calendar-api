@@ -23,6 +23,12 @@ export class TaskEntity {
   @Column({ type: 'integer', default: 0 })
   reward: number;
 
+  @Column({ name: 'start_time', type: 'time', nullable: true })
+  start_time: string | null;
+
+  @Column({ name: 'end_time', type: 'time', nullable: true })
+  end_time: string | null;
+
   @Column({ name: 'created_by_id', type: 'uuid', nullable: true })
   created_by_id: string | null;
 

@@ -53,7 +53,7 @@ export class RoutineService {
     const links = await this.routineTasksRepository.find({
       where: { routine_id: In(routineIds) },
       order: { sort_order: 'ASC', id: 'ASC' },
-      select: ['id', 'routine_id', 'task_id', 'sort_order', 'day_of_week'], // Explicitly select day_of_week
+      select: ['id', 'routine_id', 'task_id', 'sort_order', 'day_of_week', 'start_time', 'end_time', 'duration'],
     });
 
     const taskIds = Array.from(new Set(links.map((l) => l.task_id)));
@@ -87,15 +87,19 @@ export class RoutineService {
         if (!task) continue;
         
         const dayOfWeek = link.day_of_week ?? null;
+        // Use routine_task duration if set, otherwise fall back to task duration
+        const effectiveDuration = link.duration ?? task.duration ?? 5;
         const taskData = {
           id: task.id,
           title: task.title,
           description: task.description ?? '',
           color: task.color ?? '#4ECDC4',
           emoji: task.icon ?? '🎯',
-          duration: task.duration ?? 5,
+          duration: effectiveDuration,
           reward: task.reward ?? 0,
           isActive: task.is_active ?? true,
+          startTime: link.start_time ?? null,
+          endTime: link.end_time ?? null,
         };
         
         if (dayOfWeek === null) {
@@ -163,15 +167,23 @@ export class RoutineService {
       
       for (const [dayStr, tasks] of Object.entries(dto.tasksByDay)) {
         const dayOfWeek = parseInt(dayStr, 10);
-        const taskIds = this.extractTaskIds(tasks);
+        const taskList = Array.isArray(tasks) ? tasks : [];
         
-        taskIds.forEach((taskId, index) => {
+        taskList.forEach((taskItem: any, index: number) => {
+          const taskId = typeof taskItem === 'object' ? taskItem.id : taskItem;
+          const startTime = typeof taskItem === 'object' ? taskItem.startTime : null;
+          const endTime = typeof taskItem === 'object' ? taskItem.endTime : null;
+          const duration = typeof taskItem === 'object' ? taskItem.duration : null;
+          
           taskEntries.push(
             this.routineTasksRepository.create({
               routine_id: savedRoutine.id,
               task_id: taskId,
               sort_order: index,
               day_of_week: dayOfWeek,
+              start_time: startTime,
+              end_time: endTime,
+              duration: duration,
             }),
           );
         });
@@ -182,18 +194,26 @@ export class RoutineService {
       }
     } else {
       // Legacy format: taskIds or tasks apply to all days
-      const taskIds = this.extractTaskIds(dto.taskIds ?? dto.tasks);
+      const taskList = dto.taskIds ?? dto.tasks ?? [];
 
-      if (taskIds.length > 0) {
+      if (Array.isArray(taskList) && taskList.length > 0) {
         await this.routineTasksRepository.save(
-          taskIds.map((taskId, index) =>
-            this.routineTasksRepository.create({
+          taskList.map((taskItem: any, index: number) => {
+            const taskId = typeof taskItem === 'object' ? taskItem.id : taskItem;
+            const startTime = typeof taskItem === 'object' ? taskItem.startTime : null;
+            const endTime = typeof taskItem === 'object' ? taskItem.endTime : null;
+            const duration = typeof taskItem === 'object' ? taskItem.duration : null;
+            
+            return this.routineTasksRepository.create({
               routine_id: savedRoutine.id,
               task_id: taskId,
               sort_order: index,
-              day_of_week: null, // null = applies to all days
-            }),
-          ),
+              day_of_week: null,
+              start_time: startTime,
+              end_time: endTime,
+              duration: duration,
+            });
+          }),
         );
       }
     }
@@ -222,24 +242,19 @@ export class RoutineService {
 
     // Handle tasksByDay if provided (update specific day's tasks)
     if (dto.tasksByDay && typeof dto.tasksByDay === 'object') {
-      // First, check if there are any legacy tasks (day_of_week = NULL)
-      const legacyTasks = await this.routineTasksRepository.find({
-        where: { routine_id: id, day_of_week: null as any },
-      });
-      
-      // If we're adding day-specific tasks and there are legacy tasks, remove legacy tasks
-      if (legacyTasks.length > 0) {
-        await this.routineTasksRepository.delete({
-          routine_id: id,
-          day_of_week: null as any,
-        });
-      }
+      // Delete any legacy tasks (day_of_week IS NULL) — use QueryBuilder to reliably match NULL
+      await this.routineTasksRepository
+        .createQueryBuilder()
+        .delete()
+        .from(RoutineTask)
+        .where('routine_id = :id AND day_of_week IS NULL', { id })
+        .execute();
       
       const taskEntries: any[] = [];
       
       for (const [dayStr, tasks] of Object.entries(dto.tasksByDay)) {
         const dayOfWeek = parseInt(dayStr, 10);
-        const taskIds = this.extractTaskIds(tasks);
+        const taskList = Array.isArray(tasks) ? tasks : [];
         
         // Delete existing tasks for this specific day
         await this.routineTasksRepository.delete({
@@ -247,14 +262,22 @@ export class RoutineService {
           day_of_week: dayOfWeek,
         });
         
-        // Add new tasks for this day
-        taskIds.forEach((taskId, index) => {
+        // Add new tasks for this day with time support
+        taskList.forEach((taskItem: any, index: number) => {
+          const taskId = typeof taskItem === 'object' ? taskItem.id : taskItem;
+          const startTime = typeof taskItem === 'object' ? taskItem.startTime : null;
+          const endTime = typeof taskItem === 'object' ? taskItem.endTime : null;
+          const duration = typeof taskItem === 'object' ? taskItem.duration : null;
+          
           taskEntries.push(
             this.routineTasksRepository.create({
               routine_id: savedRoutine.id,
               task_id: taskId,
               sort_order: index,
               day_of_week: dayOfWeek,
+              start_time: startTime,
+              end_time: endTime,
+              duration: duration,
             }),
           );
         });
@@ -268,20 +291,28 @@ export class RoutineService {
       const hasTaskPatch = dto.taskIds !== undefined || dto.tasks !== undefined;
 
       if (hasTaskPatch) {
-        const taskIds = this.extractTaskIds(dto.taskIds ?? dto.tasks);
+        const taskList = dto.taskIds ?? dto.tasks ?? [];
 
         await this.routineTasksRepository.delete({ routine_id: id });
 
-        if (taskIds.length > 0) {
+        if (Array.isArray(taskList) && taskList.length > 0) {
           await this.routineTasksRepository.save(
-            taskIds.map((taskId, index) =>
-              this.routineTasksRepository.create({
+            taskList.map((taskItem: any, index: number) => {
+              const taskId = typeof taskItem === 'object' ? taskItem.id : taskItem;
+              const startTime = typeof taskItem === 'object' ? taskItem.startTime : null;
+              const endTime = typeof taskItem === 'object' ? taskItem.endTime : null;
+              const duration = typeof taskItem === 'object' ? taskItem.duration : null;
+              
+              return this.routineTasksRepository.create({
                 routine_id: savedRoutine.id,
                 task_id: taskId,
                 sort_order: index,
                 day_of_week: null,
-              }),
-            ),
+                start_time: startTime,
+                end_time: endTime,
+                duration: duration,
+              });
+            }),
           );
         }
       }

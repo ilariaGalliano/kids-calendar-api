@@ -6,4 +6,6 @@ export class UpdateTaskDto {
   duration?: number;
   isActive?: boolean;
   reward?: number;
+  startTime?: string | null; // 'HH:mm' - ora inizio
+  endTime?: string | null;   // 'HH:mm' - ora fine
 }

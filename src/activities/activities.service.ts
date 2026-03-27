@@ -62,7 +62,7 @@ export class ActivitiesService {
     const links = await this.routineTaskRepository.find({
       where: { routine_id: In(routineIds) },
       order: { sort_order: 'ASC', id: 'ASC' },
-      select: ['id', 'routine_id', 'task_id', 'sort_order', 'day_of_week'], // Explicitly select day_of_week
+      select: ['id', 'routine_id', 'task_id', 'sort_order', 'day_of_week', 'start_time', 'end_time'],
     });
     if (!links.length) return [];
 
@@ -109,37 +109,52 @@ export class ActivitiesService {
         const routineLinks = linksByRoutine.get(routine.id) ?? [];
         const child = childById.get(routine.child_id);
 
-        // Filter tasks for this specific day
-        const tasksForToday = routineLinks.filter(link => {
-          // If day_of_week is null, task applies to all days (legacy)
-          if (link.day_of_week === null || link.day_of_week === undefined) {
-            // For legacy tasks, check if routine.day_of_week matches
-            return (routine.day_of_week ?? -1) === dayDow;
-          }
-          // For day-specific tasks, check if task's day_of_week matches
-          return link.day_of_week === dayDow;
-        });
+        // Filter tasks for this specific day: usa SOLO routine_tasks.day_of_week
+        const tasksForToday = routineLinks.filter(link => link.day_of_week === dayDow);
 
         if (tasksForToday.length === 0) continue;
 
-        // Calculate start time for tasks in sequence
-        let currentTime = new Date(cursor);
-        currentTime.setHours(8, 0, 0, 0); // Default start time
+        // Sort tasks: those with explicit start_time first (by time), then sequential tasks
+        const tasksWithTime = tasksForToday.filter(l => l.start_time);
+        const tasksSequential = tasksForToday.filter(l => !l.start_time);
+        
+        // Sort tasks with explicit time by their start_time
+        tasksWithTime.sort((a, b) => {
+          const timeA = a.start_time || '00:00:00';
+          const timeB = b.start_time || '00:00:00';
+          return timeA.localeCompare(timeB);
+        });
 
-        for (const link of tasksForToday) {
+        // Calculate start time for sequential tasks
+        let currentTime = new Date(cursor);
+        currentTime.setHours(8, 0, 0, 0); // Default start time for sequential tasks
+
+        // Process tasks with explicit time first
+        for (const link of tasksWithTime) {
           const task = taskById.get(link.task_id);
           if (!task || task.is_active === false) continue;
 
-          const startAt = new Date(currentTime);
-          const duration = Number(task.duration ?? 5);
-          const endAt = new Date(startAt.getTime() + duration * 60 * 1000);
+          // Parse start_time (format: HH:MM:SS or HH:MM)
+          const [startHours, startMinutes] = (link.start_time || '08:00').split(':').map(Number);
+          const startAt = new Date(cursor);
+          startAt.setHours(startHours, startMinutes, 0, 0);
 
-          // Update current time for next task
-          currentTime = new Date(endAt);
+          let endAt: Date;
+          if (link.end_time) {
+            // Use explicit end_time
+            const [endHours, endMinutes] = link.end_time.split(':').map(Number);
+            endAt = new Date(cursor);
+            endAt.setHours(endHours, endMinutes, 0, 0);
+          } else {
+            // Calculate from duration
+            const duration = Number(task.duration ?? 5);
+            endAt = new Date(startAt.getTime() + duration * 60 * 1000);
+          }
+
+          const duration = Math.round((endAt.getTime() - startAt.getTime()) / 60000);
 
           if (startAt < start || startAt > end) continue;
 
-          // Check if this task was completed
           const completionKey = `${routine.id}_${task.id}_${dayKey}`;
           const isCompleted = completionMap.has(completionKey);
 
@@ -163,7 +178,52 @@ export class ActivitiesService {
             task_id: task.id,
             child_name: child?.name,
             sort_order: link.sort_order,
-            day_of_week: link.day_of_week, // Include for debugging
+            day_of_week: link.day_of_week,
+            start_time: link.start_time,
+            end_time: link.end_time,
+          });
+        }
+
+        // Process sequential tasks (no explicit time)
+        for (const link of tasksSequential) {
+          const task = taskById.get(link.task_id);
+          if (!task || task.is_active === false) continue;
+
+          const startAt = new Date(currentTime);
+          const duration = Number(task.duration ?? 5);
+          const endAt = new Date(startAt.getTime() + duration * 60 * 1000);
+
+          // Update current time for next task
+          currentTime = new Date(endAt);
+
+          if (startAt < start || startAt > end) continue;
+
+          const completionKey = `${routine.id}_${task.id}_${dayKey}`;
+          const isCompleted = completionMap.has(completionKey);
+
+          out.push({
+            id: `routine_${routine.id}_${task.id}_${dayKey}`,
+            name_activity: task.title,
+            value: task.reward ?? null,
+            date_start: startAt,
+            date_end: endAt,
+            done: isCompleted,
+            timer: duration,
+            expire_time: null,
+            description: task.description ?? routine.description,
+            created_at: routine.created_at,
+            updated_at: routine.updated_at,
+            user_id: child?.user_id,
+            children_id: routine.child_id,
+            icon: task.icon ?? '🎯',
+            source: 'routine',
+            routine_id: routine.id,
+            task_id: task.id,
+            child_name: child?.name,
+            sort_order: link.sort_order,
+            day_of_week: link.day_of_week,
+            start_time: null,
+            end_time: null,
           });
         }
       }

@@ -27,6 +27,8 @@ export class TasksService {
       isActive: task.is_active ?? true,
       description: task.description ?? '',
       reward: task.reward ?? 0,
+      startTime: task.start_time ?? null,
+      endTime: task.end_time ?? null,
     }));
   }
 
@@ -40,6 +42,8 @@ export class TasksService {
       reward: dto.reward ?? 0,
       is_active: dto.isActive ?? true,
       created_by_id: userId ?? null,
+      start_time: dto.startTime ?? null,
+      end_time: dto.endTime ?? null,
     });
 
     const saved = await this.taskRepository.save(task);
@@ -52,6 +56,8 @@ export class TasksService {
       isActive: saved.is_active ?? true,
       description: saved.description ?? '',
       reward: saved.reward ?? 0,
+      startTime: saved.start_time ?? null,
+      endTime: saved.end_time ?? null,
     };
   }
 
@@ -66,6 +72,8 @@ export class TasksService {
     if (dto.duration !== undefined) task.duration = dto.duration;
     if (dto.isActive !== undefined) task.is_active = dto.isActive;
     if (dto.reward !== undefined) task.reward = dto.reward;
+    if (dto.startTime !== undefined) task.start_time = dto.startTime;
+    if (dto.endTime !== undefined) task.end_time = dto.endTime;
 
     const saved = await this.taskRepository.save(task);
     return {
@@ -77,6 +85,8 @@ export class TasksService {
       isActive: saved.is_active ?? true,
       description: saved.description ?? '',
       reward: saved.reward ?? 0,
+      startTime: saved.start_time ?? null,
+      endTime: saved.end_time ?? null,
     };
   }
 
