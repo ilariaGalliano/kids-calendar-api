@@ -30,16 +30,10 @@ export class ActivitiesService {
   }
 
   private combineDateAndTime(baseDate: Date, hhmm?: string | null): Date {
-    const d = new Date(baseDate);
-    d.setHours(8, 0, 0, 0);
-
-    if (!hhmm) return d;
-
-    const [h, m] = hhmm.split(':').map((v) => Number(v));
-    if (Number.isFinite(h) && Number.isFinite(m)) {
-      d.setHours(h, m, 0, 0);
-    }
-    return d;
+    // Use ISO string construction to avoid server timezone offset on Vercel (UTC)
+    const dayStr = this.formatDate(baseDate); // "YYYY-MM-DD"
+    const timeStr = hhmm ? hhmm.substring(0, 5) : '08:00'; // "HH:MM"
+    return new Date(`${dayStr}T${timeStr}:00`);
   }
 
   private async buildRoutineActivitiesForChildren(
@@ -125,28 +119,24 @@ export class ActivitiesService {
           return timeA.localeCompare(timeB);
         });
 
-        // Calculate start time for sequential tasks
-        let currentTime = new Date(cursor);
-        currentTime.setHours(8, 0, 0, 0); // Default start time for sequential tasks
+        // Calculate start time for sequential tasks (wall-clock 08:00, timezone-independent)
+        let currentTime = new Date(`${dayKey}T08:00:00`);
 
         // Process tasks with explicit time first
         for (const link of tasksWithTime) {
           const task = taskById.get(link.task_id);
           if (!task || task.is_active === false) continue;
 
-          // Parse start_time (format: HH:MM:SS or HH:MM)
-          const [startHours, startMinutes] = (link.start_time || '08:00').split(':').map(Number);
-          const startAt = new Date(cursor);
-          startAt.setHours(startHours, startMinutes, 0, 0);
+          // Build dates as "YYYY-MM-DDTHH:MM:00" (no Z) so they are treated as
+          // wall-clock time independent of server timezone (avoids UTC offset on Vercel)
+          const startTimeStr = (link.start_time || '08:00').substring(0, 5); // "HH:MM"
+          const startAt = new Date(`${dayKey}T${startTimeStr}:00`);
 
           let endAt: Date;
           if (link.end_time) {
-            // Use explicit end_time
-            const [endHours, endMinutes] = link.end_time.split(':').map(Number);
-            endAt = new Date(cursor);
-            endAt.setHours(endHours, endMinutes, 0, 0);
+            const endTimeStr = link.end_time.substring(0, 5);
+            endAt = new Date(`${dayKey}T${endTimeStr}:00`);
           } else {
-            // Calculate from duration
             const duration = Number(task.duration ?? 5);
             endAt = new Date(startAt.getTime() + duration * 60 * 1000);
           }
