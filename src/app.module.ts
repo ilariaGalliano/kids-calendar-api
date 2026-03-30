@@ -43,6 +43,7 @@ import { RoutineTask } from './routine/routine-task.entity';
         max: 1,
         min: 0,
         idleTimeoutMillis: 10000,
+        prepare: false, // richiesto per Supabase transaction mode pooler
       },
     }),
     TypeOrmModule.forFeature([Routine, TaskEntity, RoutineTask]),
