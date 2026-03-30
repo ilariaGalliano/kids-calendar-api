@@ -24,6 +24,9 @@ export class User {
     @Column({ nullable: true })
     lastname: string
 
+    @Column({ name: 'redemption_pin', type: 'text', nullable: true })
+    redemption_pin: string | null;
+
     @OneToMany(() => Children, (child) => child.user)
     children: Children[];
 }

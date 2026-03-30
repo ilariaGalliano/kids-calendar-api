@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
@@ -43,6 +44,25 @@ export class UsersService {
             throw new NotFoundException(`User with ID ${id} not found`);
         }
         return { message: `User with ID ${id} has been deleted successfully!`}
+    }
+
+    async hasPin(userId: string): Promise<boolean> {
+        const user = await this.userRepository.findOneBy({ id: userId });
+        return !!(user?.redemption_pin);
+    }
+
+    async setPin(userId: string, pin: string): Promise<void> {
+        const user = await this.userRepository.findOneBy({ id: userId });
+        if (!user) throw new NotFoundException('User not found');
+        const hash = await bcrypt.hash(pin, 10);
+        user.redemption_pin = hash;
+        await this.userRepository.save(user);
+    }
+
+    async verifyPin(userId: string, pin: string): Promise<boolean> {
+        const user = await this.userRepository.findOneBy({ id: userId });
+        if (!user || !user.redemption_pin) return false;
+        return bcrypt.compare(pin, user.redemption_pin);
     }
 
     async search(filters: { name?: string; department?:string}): Promise<User[]> {
