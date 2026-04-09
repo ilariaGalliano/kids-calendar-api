@@ -18,7 +18,6 @@ export class ChildrenSettingService {
     const child = this.childrenRepository.create({
       id: dto.id,
       name: dto.name,
-      age: dto.age,
       years: dto.years !== undefined ? dto.years : 0, // Provide a default value if years is not present
       sex: dto.sex,
       avatar: dto.avatar,
