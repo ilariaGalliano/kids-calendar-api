@@ -91,12 +91,12 @@ export class ActivitiesService {
 
     const out: any[] = [];
     const cursor = new Date(start);
-    cursor.setHours(0, 0, 0, 0);
+    cursor.setUTCHours(0, 0, 0, 0);
     const endDay = new Date(end);
-    endDay.setHours(23, 59, 59, 999);
+    endDay.setUTCHours(23, 59, 59, 999);
 
     while (cursor <= endDay) {
-      const dayDow = cursor.getDay(); // 0=Sunday, 1=Monday, etc.
+      const dayDow = cursor.getUTCDay(); // 0=Sunday, 1=Monday, etc. — UTC to match toISOString()
       const dayKey = this.formatDate(cursor);
 
       for (const routine of routines) {
@@ -218,7 +218,7 @@ export class ActivitiesService {
         }
       }
 
-      cursor.setDate(cursor.getDate() + 1);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
     return out.sort(
@@ -357,9 +357,9 @@ export class ActivitiesService {
   // Trova activities per un giorno specifico
   async findByDay(childId: string, date: string): Promise<{ activities: Activity[]; point: number }> {
     const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
+    startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
     const db = await this.activityRepository
       .createQueryBuilder('activity')
@@ -381,7 +381,7 @@ export class ActivitiesService {
   async findByWeek(childId: string, startDate: string): Promise<{ activities: Activity[]; point: number }> {
     const start = new Date(startDate);
     const end = new Date(startDate);
-    end.setDate(end.getDate() + 7);
+    end.setUTCDate(end.getUTCDate() + 7);
 
     const db = await this.activityRepository
       .createQueryBuilder('activity')
@@ -424,9 +424,9 @@ export class ActivitiesService {
   // Trova activities per un giorno specifico per tutti i children dell'utente
   async findDayForUser(userId: string, date: string): Promise<Activity[]> {
     const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
+    startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
     const db = await this.activityRepository
       .createQueryBuilder('activity')
@@ -470,7 +470,7 @@ export class ActivitiesService {
   async findWeekForUser(userId: string, startDate: string): Promise<Activity[]> {
     const start = new Date(startDate);
     const end = new Date(startDate);
-    end.setDate(end.getDate() + 7);
+    end.setUTCDate(end.getUTCDate() + 7);
 
     const db = await this.activityRepository
       .createQueryBuilder('activity')
