@@ -55,7 +55,7 @@ export class ActivitiesController {
   async findByDay(
     @Param('childId') childId: string,
     @Query('date') date: string
-  ): Promise<Activity[]> {
+  ): Promise<{ activities: Activity[]; point: number }> {
     return this.activitiesService.findByDay(childId, date);
   }
 
@@ -64,13 +64,13 @@ export class ActivitiesController {
   async findByWeek(
     @Param('childId') childId: string,
     @Query('startDate') startDate: string
-  ): Promise<Activity[]> {
+  ): Promise<{ activities: Activity[]; point: number }> {
     return this.activitiesService.findByWeek(childId, startDate);
   }
 
   // GET /activities/child/:childId/now
   @Get('child/:childId/now')
-  async findByNow(@Param('childId') childId: string): Promise<Activity[]> {
+  async findByNow(@Param('childId') childId: string): Promise<{ activities: Activity[]; point: number }> {
     return this.activitiesService.findByNow(childId);
   }
 

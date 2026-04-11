@@ -48,21 +48,21 @@ export class UsersService {
 
     async hasPin(userId: string): Promise<boolean> {
         const user = await this.userRepository.findOneBy({ id: userId });
-        return !!(user?.redemption_pin);
+        return !!(user?.parent_pin);
     }
 
     async setPin(userId: string, pin: string): Promise<void> {
         const user = await this.userRepository.findOneBy({ id: userId });
         if (!user) throw new NotFoundException('User not found');
         const hash = await bcrypt.hash(pin, 10);
-        user.redemption_pin = hash;
+        user.parent_pin = hash;
         await this.userRepository.save(user);
     }
 
     async verifyPin(userId: string, pin: string): Promise<boolean> {
         const user = await this.userRepository.findOneBy({ id: userId });
-        if (!user || !user.redemption_pin) return false;
-        return bcrypt.compare(pin, user.redemption_pin);
+        if (!user || !user.parent_pin) return false;
+        return bcrypt.compare(pin, user.parent_pin);
     }
 
     async search(filters: { name?: string; department?:string}): Promise<User[]> {

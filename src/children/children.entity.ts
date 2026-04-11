@@ -26,6 +26,9 @@ export class Children {
     @Column({ name: 'icon', nullable: true })
     icon: string;
 
+    @Column({ type: 'int', default: 0 })
+    point: number;
+
     @ManyToOne(() => User, (user) => user.children, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'user_id' })
     user: User;

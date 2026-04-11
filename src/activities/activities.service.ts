@@ -355,7 +355,7 @@ export class ActivitiesService {
 //   }
 
   // Trova activities per un giorno specifico
-  async findByDay(childId: string, date: string): Promise<Activity[]> {
+  async findByDay(childId: string, date: string): Promise<{ activities: Activity[]; point: number }> {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
@@ -370,12 +370,15 @@ export class ActivitiesService {
       .getMany();
 
     const routine = await this.buildRoutineActivitiesForChildren([childId], startOfDay, endOfDay);
-    return [...db, ...routine]
+    const activities = [...db, ...routine]
       .sort((a: any, b: any) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime()) as Activity[];
+
+    const child = await this.childrenRepository.findOneBy({ id: childId });
+    return { activities, point: child?.point ?? 0 };
   }
 
   // Trova activities per una settimana
-  async findByWeek(childId: string, startDate: string): Promise<Activity[]> {
+  async findByWeek(childId: string, startDate: string): Promise<{ activities: Activity[]; point: number }> {
     const start = new Date(startDate);
     const end = new Date(startDate);
     end.setDate(end.getDate() + 7);
@@ -389,12 +392,15 @@ export class ActivitiesService {
       .getMany();
 
     const routine = await this.buildRoutineActivitiesForChildren([childId], start, end);
-    return [...db, ...routine]
+    const activities = [...db, ...routine]
       .sort((a: any, b: any) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime()) as Activity[];
+
+    const child = await this.childrenRepository.findOneBy({ id: childId });
+    return { activities, point: child?.point ?? 0 };
   }
 
   // Trova activities per "now" (ora corrente +/- 2 ore)
-  async findByNow(childId: string): Promise<Activity[]> {
+  async findByNow(childId: string): Promise<{ activities: Activity[]; point: number }> {
     const now = new Date();
     const twoHoursBefore = new Date(now.getTime() - 2 * 60 * 60 * 1000);
     const twoHoursAfter = new Date(now.getTime() + 2 * 60 * 60 * 1000);
@@ -408,8 +414,11 @@ export class ActivitiesService {
       .getMany();
 
     const routine = await this.buildRoutineActivitiesForChildren([childId], twoHoursBefore, twoHoursAfter);
-    return [...db, ...routine]
+    const activities = [...db, ...routine]
       .sort((a: any, b: any) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime()) as Activity[];
+
+    const child = await this.childrenRepository.findOneBy({ id: childId });
+    return { activities, point: child?.point ?? 0 };
   }
 
   // Trova activities per un giorno specifico per tutti i children dell'utente
