@@ -14,8 +14,22 @@ export class Children {
     @Column()
     name: string
 
-    @Column()
-    years: string;
+    @Column({ nullable: true })
+    years: string; // kept nullable for legacy, not used for new records
+
+    @Column({ type: 'date', nullable: true })
+    birth_date: string | null; // YYYY-MM-DD
+
+    /** Computed age in years from birth_date (not a DB column) */
+    get age(): number | null {
+        if (!this.birth_date) return null;
+        const today = new Date();
+        const dob = new Date(this.birth_date);
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+        return age;
+    }
 
     @Column({ nullable: true })
     sex: string;

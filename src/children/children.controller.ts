@@ -11,26 +11,25 @@ export class ChildrenController {
     @UseGuards(SupabaseJwtGuard)
     @Post()
     async createChildren(@Body() body: Partial<Children>, @Req() req: Request): Promise<Children>{
-        const user = req.user as { sub?: string } | undefined;
+        const user = req.user as { sub?: string; email?: string } | undefined;
         if (!user?.sub) {
             throw new Error('User not authenticated');
         }
-        // Assicura che user_id sia preso dal JWT
-        const childData = { ...body, user_id: user.sub };
+        const childData = { ...body, user_id: user.sub, user_email: user.email };
         return this.childrenSrv.create(childData);
     }
 
     @UseGuards(SupabaseJwtGuard)
     @Post('batch')
     async createChildrenBatch(@Body() body: { children: Partial<Children>[] }, @Req() req: Request): Promise<Children[]>{
-        const user = req.user as { sub?: string } | undefined;
+        const user = req.user as { sub?: string; email?: string } | undefined;
         if (!user?.sub) {
             throw new Error('User not authenticated');
         }
-        // Aggiungi user_id a tutti i bambini
         const childrenWithUser = body.children.map(child => ({
             ...child,
-            user_id: user.sub
+            user_id: user.sub,
+            user_email: user.email
         }));
         return this.childrenSrv.createBatch(childrenWithUser);
     }

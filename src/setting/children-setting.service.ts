@@ -10,22 +10,29 @@ export class ChildrenSettingService {
     private childrenRepository: Repository<Children>
   ) {}
 
-  async getAllChildrenByUserId(userId: string): Promise<Children[]> {
-    return this.childrenRepository.find({ where: { user_id: userId } });
+  async getAllChildrenByUserId(userId: string): Promise<any[]> {
+    const children = await this.childrenRepository.find({ where: { user_id: userId } });
+    return children.map((child) => {
+      let years: number | null = null;
+      if (child.birth_date) {
+        const today = new Date();
+        const dob = new Date(child.birth_date);
+        years = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) years--;
+      }
+      return { ...child, years };
+    });
   }
 
   async addChild(dto: any): Promise<Children> {
     const child = this.childrenRepository.create({
-      id: dto.id,
       name: dto.name,
-      years: dto.years !== undefined ? dto.years : 0, // Provide a default value if years is not present
+      birth_date: dto.birth_date ?? null,
       sex: dto.sex,
       avatar: dto.avatar,
       user_id: dto.user_id,
       icon: dto.icon,
-      activities: dto.activities,
-      created_at: dto.created_at,
-      user: dto.user
     } as any);
     return await this.childrenRepository.save(child) as unknown as Children;
   }

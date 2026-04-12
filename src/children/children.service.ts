@@ -2,20 +2,40 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Children } from './children.entity';
+import { User } from '../user/user.entity';
 
 @Injectable()
 export class ChildrenService {
     constructor(
         @InjectRepository(Children)
-        private childrenRepository: Repository<Children>
+        private childrenRepository: Repository<Children>,
+        @InjectRepository(User)
+        private userRepository: Repository<User>
     ) {}
 
-    async create(userData: Partial<Children>): Promise<Children> {
+    /** Ensures the user row exists in public.user before any child insert (prevents FK violation) */
+    private async upsertUser(userId: string, email?: string): Promise<void> {
+        await this.userRepository
+            .createQueryBuilder()
+            .insert()
+            .into(User)
+            .values({ id: userId, email: email ?? `${userId}@unknown.local` })
+            .orIgnore() // ON CONFLICT DO NOTHING
+            .execute();
+    }
+
+    async create(userData: Partial<Children> & { user_email?: string }): Promise<Children> {
+        if (userData.user_id) {
+            await this.upsertUser(userData.user_id, userData.user_email);
+        }
         const children = this.childrenRepository.create(userData);
         return this.childrenRepository.save(children);
     }
 
-    async createBatch(childrenData: Partial<Children>[]): Promise<Children[]> {
+    async createBatch(childrenData: (Partial<Children> & { user_email?: string })[]): Promise<Children[]> {
+        if (childrenData.length > 0 && childrenData[0].user_id) {
+            await this.upsertUser(childrenData[0].user_id, childrenData[0].user_email);
+        }
         const children = this.childrenRepository.create(childrenData);
         return this.childrenRepository.save(children);
     }
