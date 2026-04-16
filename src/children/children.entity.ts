@@ -40,6 +40,9 @@ export class Children {
     @Column({ name: 'icon', nullable: true })
     icon: string;
 
+    @Column({ name: 'avatar', type: 'text', nullable: true })
+    avatar: string | null;
+
     @Column({ type: 'int', default: 0 })
     point: number;
 

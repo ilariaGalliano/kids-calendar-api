@@ -30,7 +30,7 @@ export class ChildrenSettingService {
       name: dto.name,
       birth_date: dto.birth_date ?? null,
       sex: dto.sex,
-      avatar: dto.avatar,
+      avatar: dto.avatar ?? null,
       user_id: dto.user_id,
       icon: dto.icon,
     } as any);
