@@ -65,7 +65,9 @@ export class ChildrenController {
         @Param('id', ParseUUIDPipe) id: string,
         @Body() body: Partial<Children>,
     ): Promise<Children>{
-        return this.childrenSrv.update(id, body);
+        // Safety: never accept base64 avatar via JSON PUT — use multipart upload
+        const { avatar, ...safeBody } = body as any;
+        return this.childrenSrv.update(id, safeBody);
     }
 
     @Delete(':id')

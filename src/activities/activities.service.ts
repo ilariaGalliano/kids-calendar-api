@@ -628,7 +628,7 @@ export class ActivitiesService {
 
         updated++;
       } catch (error) {
-        errors.push(`Error moving task ${move.taskId}: ${error.message}`);
+        errors.push(`Error moving task ${move.taskId}: ${error}`);
       }
     }
 
@@ -721,7 +721,7 @@ export class ActivitiesService {
         await this.routineTaskRepository.save(link);
         updated++;
       } catch (error) {
-        errors.push(`Error updating order for task ${update.taskId}: ${error.message}`);
+        errors.push(`Error updating order for task ${update.taskId}: ${error}`);
       }
     }
 

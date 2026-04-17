@@ -1,14 +1,29 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Children } from '../children/children.entity';
 
 @Injectable()
 export class ChildrenSettingService {
+  private supabase: SupabaseClient | null = null;
+
   constructor(
     @InjectRepository(Children)
     private childrenRepository: Repository<Children>
   ) {}
+
+  private getSupabase(): SupabaseClient {
+    if (!this.supabase) {
+      const url = process.env.SUPABASE_URL;
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!url || !key) {
+        throw new InternalServerErrorException('Supabase storage not configured');
+      }
+      this.supabase = createClient(url, key);
+    }
+    return this.supabase;
+  }
 
   async getAllChildrenByUserId(userId: string): Promise<any[]> {
     const children = await this.childrenRepository.find({ where: { user_id: userId } });
@@ -53,5 +68,30 @@ export class ChildrenSettingService {
       throw new NotFoundException(`Child with ID ${id} not found`);
     }
     return { message: `Child with ID ${id} has been deleted successfully` };
+  }
+
+  async uploadAvatarFile(childId: string, file: Express.Multer.File): Promise<Children> {
+    const supabase = this.getSupabase();
+    const bucketName = 'avatars';
+    const path = childId;
+
+    // Ensure the storage bucket exists (idempotent)
+    const { error: bucketError } = await supabase.storage.createBucket(bucketName, { public: true });
+    if (bucketError && !bucketError.message?.includes('already exists')) {
+      throw new InternalServerErrorException(`Storage bucket creation failed: ${bucketError.message}`);
+    }
+
+    const { error } = await supabase.storage
+      .from(bucketName)
+      .upload(path, file.buffer, { contentType: file.mimetype, upsert: true });
+
+    if (error) {
+      throw new InternalServerErrorException(`Storage upload failed: ${error.message}`);
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+    // Append cache-buster so browsers pick up the new image after upsert
+    const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
+    return this.updateChild(childId, { avatar: publicUrl });
   }
 }
