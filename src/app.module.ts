@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { DatabaseModule } from './database/database.module';
 
 // Usa SEMPRE questo import come tipo per il costruttore
@@ -28,6 +30,11 @@ import { RoutineTask } from './routine/routine-task.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Rate limiting globale: 100 richieste per minuto per IP
+    ThrottlerModule.forRoot([{
+      ttl: 60000,  // 1 minuto in millisecondi
+      limit: 100,   // max 100 richieste per minuto
+    }]),
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
@@ -65,6 +72,11 @@ import { RoutineTask } from './routine/routine-task.entity';
   providers: [
     TasksService,
     RoutineService,
+    // Rate limiting globale applicato a tutti gli endpoint
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {

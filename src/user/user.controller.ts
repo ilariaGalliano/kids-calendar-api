@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards, Req } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { SupabaseJwtGuard } from '../auth/supabase-jwt.guard';
 import type { Request } from 'express';
 import { UsersService } from './user.service';
@@ -8,6 +9,8 @@ import { User } from './user.entity';
 export class UsersController {
     constructor(private readonly userervice: UsersService){}
 
+    // Rate limit più stretto per la creazione utente: 5 richieste per minuto
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @Post()
     async createUser(@Body() body: Partial<User>): Promise<User>{
         return this.userervice.create(body);
@@ -27,6 +30,8 @@ export class UsersController {
         return { hasPin };
     }
 
+    // Rate limit stretto per impostazione PIN: 5 richieste per minuto
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @UseGuards(SupabaseJwtGuard)
     @Post('me/pin')
     async setPin(@Body() body: { pin: string }, @Req() req: Request): Promise<{ success: boolean }> {
@@ -35,6 +40,8 @@ export class UsersController {
         return { success: true };
     }
 
+    // Rate limit stretto per verifica PIN: 5 richieste per minuto (anti brute-force)
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @UseGuards(SupabaseJwtGuard)
     @Post('me/pin/verify')
     async verifyPin(@Body() body: { pin: string }, @Req() req: Request): Promise<{ valid: boolean }> {
